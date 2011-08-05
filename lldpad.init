@@ -36,17 +36,19 @@
 # description: Link Layer Discovery Protocol Agent Daemon
 #
 ### BEGIN INIT INFO
-# Provides: lldpad
-# Required-Start: network
+# Provides: boot.lldpad
+# Required-Start:
+# Should-Start: boot.multipath
 # Required-Stop:
-# Default-Start: 3 5
+# Should-Stop: $null
+# Default-Start: B
 # Default-Stop:
-# Short Description: Link Layer Discovery Protocol Agent Daemon
+# Short-Description: Link Layer Discovery Protocol Agent Daemon
 # Description: Link Layer Discovery Protocol Agent Daemon
 ### END INIT INFO
 
 LLDPAD=lldpad
-LLDPAD_BIN=/usr/sbin/$LLDPAD
+LLDPAD_BIN=/sbin/$LLDPAD
 
 test -x $LLDPAD_BIN || { echo "$LLDPAD_BIN not installed";
 	if [ "$1" = "stop" ]; then exit 0;

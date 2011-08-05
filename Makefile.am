@@ -88,6 +88,6 @@ dist_noinst_SCRIPTS = lldpad.init
 ## special hooks to handle the init script
 install-data-local: lldpad.init
 	$(MKDIR_P) $(DESTDIR)/etc/init.d
-	$(INSTALL_SCRIPT) lldpad.init $(DESTDIR)/etc/init.d/lldpad
+	$(INSTALL_SCRIPT) lldpad.init $(DESTDIR)/etc/init.d/boot.lldpad
 
 

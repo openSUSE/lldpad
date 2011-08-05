@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Aug  5 09:56:06 CEST 2011 - hare@suse.de
+
+- Update to version 0.9.43 from upstream
+  * Fixup operation on bonding devices (bnc#707993)
+- Move init script to runlevel boot (bnc#710594)
+- Rearrange package to build from git tree.
+
+-------------------------------------------------------------------
 Fri Jul  1 11:30:29 UTC 2011 - jankit@suse.de
 
 - Get 2 patches from upstream, to match HEAD as on Jul 1 2011:

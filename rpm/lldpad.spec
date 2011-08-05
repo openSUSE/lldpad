@@ -19,24 +19,15 @@
 
 Name:           lldpad
 Summary:        Link Layer Discovery Protocol (LLDP) Agent
-Version:        0.9.42.1107011030
+Version:        0.9.43
 Release:        0.5
 License:        GPL v2 only
 Group:          System/Daemons
 BuildRequires:  bison flex libnl-devel pkgconfig
 AutoReqProv:    On
-Url:            http://www.intel.com/network/connectivity/products/server_adapters.htm
-Source:         http://downloads.sourceforge.net/e1000/%{name}-0.9.42.tar.bz2
-Source20:       mkinitrd-boot.sh
-Source21:       mkinitrd-stop.sh
-Source22:       mkinitrd-setup.sh
-Patch0:         %{name}-0.9.42-git-update
-Patch1:         %{name}-lldptool-fix-statistics-segfault
-Patch2:         %{name}-Change-the-client-interface-to-use-an-abstract-names
-Patch3:         %{name}-makefile-fixup
-Patch4:         %{name}-init-script-fixup
-#Patch5:         %{name}-0.9.32-compile-fixes
-Patch6:         lldpad-include-builtin-libconfig
+Url:            http://www.open-lldp.org 
+Source:         http://www.open-lldp.org/open-lldp/downloads/%{name}-0.9.43.tar.bz2
+Patch0:         %{name}-%{version}-sles11-sp2.diff.bz2
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       dcbd
 Obsoletes:      dcbd
@@ -72,16 +63,12 @@ Authors:
     Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
 
 %prep
-%setup -q -n lldpad-0.9.42
+%setup -q -n %{name}-%{version}
 %patch0 -p1
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
-#%patch5 -p1
-%patch6 -p1
 
 %build
+touch NEWS
+touch libconfig-1.3.2/NEWS
 autoreconf --install
 %configure --disable-cxx --bindir=/bin --sbindir=/sbin
 make %{?_smp_mflags}
@@ -90,22 +77,22 @@ make %{?_smp_mflags}
 mkdir -p ${RPM_BUILD_ROOT}/var/lib/lldpad
 %makeinstall
 install -d ${RPM_BUILD_ROOT}/lib/mkinitrd/scripts/
-install -m 755 %{S:20} ${RPM_BUILD_ROOT}/lib/mkinitrd/scripts/boot-lldpad.sh
-install -m 755 %{S:21} ${RPM_BUILD_ROOT}/lib/mkinitrd/scripts/boot-killlldpad.sh
-install -m 755 %{S:22} ${RPM_BUILD_ROOT}/lib/mkinitrd/scripts/setup-lldpad.sh
+install -m 755 rpm/mkinitrd-boot.sh ${RPM_BUILD_ROOT}/lib/mkinitrd/scripts/boot-lldpad.sh
+install -m 755 rpm/mkinitrd-stop.sh ${RPM_BUILD_ROOT}/lib/mkinitrd/scripts/boot-killlldpad.sh
+install -m 755 rpm/mkinitrd-setup.sh ${RPM_BUILD_ROOT}/lib/mkinitrd/scripts/setup-lldpad.sh
 mkdir -p ${RPM_BUILD_ROOT}/usr/sbin
-ln -s /etc/init.d/lldpad ${RPM_BUILD_ROOT}/usr/sbin/rclldpad
+ln -s /etc/init.d/boot.lldpad ${RPM_BUILD_ROOT}/usr/sbin/rclldpad
 
 %post
 [ -x /sbin/mkinitrd_setup ] && mkinitrd_setup
-%{fillup_and_insserv -n -i lldpad}
+%{fillup_and_insserv -n -i boot.lldpad}
 
 %preun
-%{stop_on_removal lldpad}
+%{stop_on_removal boot.lldpad}
 
 %postun
 [ -x /sbin/mkinitrd_setup ] && mkinitrd_setup
-%{insserv_cleanup lldpad}
+%{insserv_cleanup boot.lldpad}
 
 %clean
 rm -rf %{buildroot}
@@ -117,7 +104,7 @@ rm -rf %{buildroot}
 %doc ChangeLog
 %dir /var/lib/lldpad
 /sbin/*
-/etc/init.d/lldpad
+/etc/init.d/boot.lldpad
 %{_mandir}/man8/*
 /lib/mkinitrd
 /usr/sbin/rclldpad

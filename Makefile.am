@@ -8,9 +8,27 @@ noinst_PROGRAMS = nltest
 # pass the value of ${sysconfdir} to the C pre-processor as SYSCONFDIR
 AM_CPPFLAGS = -I${srcdir}/include -DSYSCONFDIR="\"${sysconfdir}\""
 
-## system requires a shared libconfig
-AM_CFLAGS = -Wall $(LIBCONFIG_CFLAGS)
+if BUILTIN_LIBCONFIG
+## force generation of recursive rules
+SUBDIRS = .
+DIST_SUBDIRS = . ${subdirs}
+## only compile and clean libconfig, never install it
+all-recursive $(RECURSIVE_CLEAN_TARGETS): SUBDIRS = libconfig-1.3.2
+libconfig-1.3.2/libconfig.la:
+	$(MAKE) -C libconfig-1.3.2
+## staticly link the included libconfig to both binaries
+AM_CPPFLAGS += -I${srcdir}/libconfig-1.3.2
+lldpad_LDFLAGS = -static
+lldpad_LDADD = libconfig-1.3.2/libconfig.la
+dcbtool_LDFLAGS = -static
+dcbtool_LDADD = libconfig-1.3.2/libconfig.la
+lldptool_LDFLAGS = -static
+lldptool_LDADD = libconfig-1.3.2/libconfig.la
+else
+## system has a shared libconfig, use it
+AM_CFLAGS = $(LIBCONFIG_CFLAGS)
 AM_LDFLAGS = $(LIBCONFIG_LIBS)
+endif
 
 ## header files to be installed, for programs using the client interface to lldpad 
 lldpad_includedir= ${includedir}/lldpad

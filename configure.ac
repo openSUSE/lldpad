@@ -6,8 +6,15 @@ AC_PROG_CXX
 AC_PROG_LEX
 AC_PROG_LIBTOOL
 
-PKG_CHECK_MODULES([LIBCONFIG], [libconfig >= 1.3.2])
 PKG_CHECK_MODULES([LIBNL], [libnl-1 >= 1.1])
+PKG_CHECK_MODULES(LIBCONFIG, libconfig,
+	AM_CONDITIONAL(BUILTIN_LIBCONFIG, false),
+	AM_CONDITIONAL(BUILTIN_LIBCONFIG, true))
+
+AC_SUBST(LIBCONFIG_CFLAGS)
+AC_SUBST(LIBCONFIG_LIBS)
+
+AC_CONFIG_SUBDIRS([libconfig-1.3.2])
 
 AC_SUBST(LIBNL_CFLAGS)
 AC_SUBST(LIBNL_LIBS)
@@ -29,10 +36,6 @@ AC_CHECK_FUNCS([strncasecmp])
 AC_CHECK_FUNCS([strtol])
 AC_CHECK_FUNCS([strtoul])
 AC_CHECK_FUNCS([uname])
-
-AC_CHECK_HEADER([libconfig.h], ,[AC_MSG_ERROR(
-[Could not find libconfig.h. Try installing libconfig-devel])]
-)
 
 AC_CHECK_HEADERS([arpa/inet.h])
 AC_CHECK_HEADERS([fcntl.h])

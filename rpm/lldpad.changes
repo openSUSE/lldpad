@@ -1,0 +1,89 @@
+-------------------------------------------------------------------
+Fri Jul  1 11:30:29 UTC 2011 - jankit@suse.de
+
+- Get 2 patches from upstream, to match HEAD as on Jul 1 2011:
+  * bd48460 (HEAD, origin/master, origin/HEAD, master) Change the client
+	interface to use an abstract namespace socket.
+  * ef7d5b1 lldptool: fix statistics segfault
+
+  .. which obsolete the following patches:
+
+  - lldpad-use-abstract-namespace-for-client-interface,
+  - lldpad-use-socket-string-length-to-bind-socket
+  - lldpad-enable-passing-of-sender-credentials
+
+  Also, change Group, in the spec file, for devel to :
+   Development/Libraries/C and C++
+
+-------------------------------------------------------------------
+Wed Jun 29 11:06:48 UTC 2011 - jankit@suse.de
+
+- Fix the LSB header "Short Description" to be "Short-Description"
+  in the init script 
+
+-------------------------------------------------------------------
+Tue Jun 28 14:12:51 UTC 2011 - jankit@suse.de
+
+- Update to git HEAD as on 28 Jun 2011, HEAD: 6fe0ba7.
+  The tar ball was generated from git tag v0.9.42, and rest of the
+  patches from git till HEAD are in lldpad-git-update file.
+  The tar ball includes libconfig-1.3.2 from the older 0.9.32 tarball.
+
+-------------------------------------------------------------------
+Mon Apr 11 10:58:29 CEST 2011 - hare@suse.de
+
+- Revert to original printout for error messages (bnc#651609)
+
+-------------------------------------------------------------------
+Tue Dec  7 09:20:40 CET 2010 - hare@suse.de
+
+- Fixup mkinitrd scripts (bnc#646531)
+
+-------------------------------------------------------------------
+Mon Nov  8 12:44:24 CET 2010 - hare@suse.de
+
+- Use abstract socket namespace for lldpad (bnc#651609)
+- Update mkinitrd script to correctly enable DCB (bnc#646531)
+
+-------------------------------------------------------------------
+Wed Oct  6 11:52:04 CEST 2010 - hare@suse.de
+
+- Fix DCB enabling on reboot (bnc#637949)
+- Fix lldpad for missing or dropped link events (bnc#637951)
+- Missing error handling in ctrl_iface_register (bnc#644064)
+
+-------------------------------------------------------------------
+Tue Sep  7 12:05:53 CEST 2010 - hare@suse.de
+
+- Fix link flap bug (bnc#615640)
+
+-------------------------------------------------------------------
+Fri May  7 16:02:31 CEST 2010 - hare@suse.de
+
+- Remove 'fix link flap' patch (bnc#603580)
+
+-------------------------------------------------------------------
+Mon Apr 26 13:53:10 CEST 2010 - hare@suse.de
+
+- Patches from bnc#599107:
+  * fix race condition by opening client socket earlier
+  * fix error in construction of the Priority Group TLV
+  * fix link flap
+  * fix segfault when handling lldptool arguments
+  * fix buffer overflow in lldp-med inventory string
+
+-------------------------------------------------------------------
+Fri Mar 26 11:50:46 CET 2010 - kukuk@suse.de
+
+- Fix requires of -devel subpackage
+
+-------------------------------------------------------------------
+Wed Mar 24 16:00:04 CET 2010 - hare@suse.de
+
+- Fixup mkinitrd setup script to always create /var/lib/lldpad
+
+-------------------------------------------------------------------
+Tue Mar 23 15:11:03 CET 2010 - hare@suse.de
+
+- Obsolete dcbd by lldpad version 0.9.32 (bnc#590487)
+

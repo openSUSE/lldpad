@@ -105,9 +105,9 @@ if [ -n "$use_osc" ] ; then
     if ! $OSC meta pkg $OBS_BRANCH:$OBS_PRJ $RPM > /dev/null 2>&1 ; then
 	$OSC branch -m "Update with latest fixes" $OBS_PRJ $RPM
     fi
-    $OSC co --current-dir $OBS_BRANCH:$OBS_PRJ multipath-tools
+    $OSC co --current-dir $OBS_BRANCH:$OBS_PRJ $RPM
     TMPDIR=${DESTDIR}
-    DESTDIR="${DESTDIR}/multipath-tools"
+    DESTDIR="${DESTDIR}/$RPM"
     popd
 fi
 

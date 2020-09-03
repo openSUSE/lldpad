@@ -561,7 +561,7 @@ int get_dcb_numtcs(const char *ifname, u8 *pgtcs, u8 *pfctcs)
 
 	seq = nlh->nlmsg_seq;
 
-	strncpy(name, ifname, sizeof(name));
+	STRNCPY_TERMINATED (name, ifname, sizeof(name));
 	add_rta(nlh, DCB_ATTR_IFNAME, (void *)name, strlen(name) + 1);
 	rta_parent = add_rta(nlh, DCB_ATTR_NUMTCS, NULL, 0);
 
@@ -799,17 +799,6 @@ int set_hw_app(char *ifname, appgroup_attribs *app_data)
 		return -EIO;
 
 	return(recv_msg(DCB_CMD_SAPP, DCB_ATTR_APP, seq));
-}
-
-int run_cmd(char *cmd, ...)
-{
-	char cbuf[128];
-	va_list args;
-
-	va_start(args, cmd);
-	vsprintf(cbuf, cmd, args);
-	va_end(args);
-	return system(cbuf);
 }
 
 int set_hw_all(char *ifname)

@@ -879,7 +879,7 @@ static bool vdp_vsi_set_bridge_state(struct vsi_profile *profile)
 {
 	switch(profile->state) {
 	case VSI_UNASSOCIATED:
-		if ((profile->mode == VDP_MODE_DEASSOCIATE)) /* || (INACTIVE)) */ {
+		if (profile->mode == VDP_MODE_DEASSOCIATE) {
 			vdp_vsi_change_bridge_state(profile, VSI_DEASSOC_PROCESSING);
 			return true;
 		} else if (profile->mode == VDP_MODE_ASSOCIATE) {
@@ -1607,7 +1607,7 @@ void vdp_ifup(char *ifname, struct lldp_agent *agent)
 			 __func__, ifname, sizeof(*vd));
 		goto out_err;
 	}
-	strncpy(vd->ifname, ifname, IFNAMSIZ);
+	STRNCPY_TERMINATED(vd->ifname, ifname, IFNAMSIZ);
 
 	vd->role = VDP_ROLE_STATION;
 	vd->enabletx = enabletx;
@@ -1882,7 +1882,7 @@ int vdp_trigger(struct vsi_profile *profile)
 	if (!macp->req_pid)
 		return 0;
 	sleep(1);		/* Delay message notification */
-	if (!profile->port || !profile->port->ifname) {
+	if (!profile->port || !profile->port->ifname[0]) {
 		LLDPAD_ERR("%s: no ifname found for profile %p:\n", __func__,
 			   profile);
 		goto error_exit;

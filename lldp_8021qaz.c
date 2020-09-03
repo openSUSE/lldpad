@@ -50,6 +50,7 @@
 
 struct lldp_head lldp_head;
 struct config_t lldpad_cfg;
+extern bool read_only_8021qaz;
 
 static int ieee8021qaz_check_pending(struct port *port, struct lldp_agent *);
 static void run_all_sm(struct port *port, struct lldp_agent *agent);
@@ -591,7 +592,7 @@ void ieee8021qaz_ifup(char *ifname, struct lldp_agent *agent)
 	memset(tlvs->rx, 0, sizeof(*tlvs->rx));
 
 	/* Initializing the ieee8021qaz_tlvs struct */
-	strncpy(tlvs->ifname, ifname, IFNAMSIZ);
+	STRNCPY_TERMINATED(tlvs->ifname, ifname, IFNAMSIZ);
 	tlvs->port = port;
 	tlvs->ieee8021qazdu = 0;
 	l2_packet_get_own_src_addr(port->l2, tlvs->local_mac);
@@ -960,6 +961,9 @@ static int del_ieee_hw(const char *ifname, struct dcb_app *app_data)
 			   .dcb_pad = 0
 			  };
 
+	if (read_only_8021qaz)
+		return 0;
+
 	nlsocket = nl_socket_alloc();
 	if (!nlsocket) {
 		LLDPAD_WARN("%s: %s: nl_handle_alloc failed\n",
@@ -1042,6 +1046,9 @@ static int set_ieee_hw(const char *ifname, struct ieee_ets *ets_data,
 			   .cmd = DCB_CMD_IEEE_SET,
 			   .dcb_pad = 0
 			  };
+
+	if (read_only_8021qaz)
+		return 0;
 
 	nlsocket = nl_socket_alloc();
 	if (!nlsocket) {

@@ -28,7 +28,7 @@
 #include "lldp_util.h"
 #include "vdp_cisco.h"
 
-bool cisco_oui_encode_hndlr(char *dst, char *src, int len)
+bool cisco_oui_encode_hndlr(char *dst, char *src, size_t len)
 {
 	char *src_temp = strdup(src);
 	char *key, *data;
@@ -47,7 +47,7 @@ bool cisco_oui_encode_hndlr(char *dst, char *src, int len)
 	if ((!strcmp(key, CISCO_OUI_NAME_ARG_STR)) ||
 	    (!strcmp(key, CISCO_OUI_L3V4ADDR_ARG_STR)) ||
 	    (!strcmp(key, CISCO_OUI_NAME_UUID_ARG_STR))) {
-		snprintf(dst, MAX_OUI_DATA_LEN - len, "%02x%s%04x%s",
+		snprintf(dst, MAX_OUI_DATA_LEN - (int)len, "%02x%s%04x%s",
 			 (unsigned int)strlen(key), key,
 			 (unsigned int)strlen(data), data);
 		flag = true;

@@ -2260,12 +2260,10 @@ cmd_status get_bwg_descrpt(char *device_name, u8 bwgid, char **name)
 		size = (int)strlen(it->second->pgid_desc[bwgid]) +
 			sizeof(char);  /* Localization OK */
 		*name = (char*)malloc(size);
-		if (*name != NULL) {
-			strncpy(*name, it->second->pgid_desc[bwgid],
-					size); /* Localization OK */
-		} else {
+		if (*name == NULL)
 			goto Error;
-		}
+		memcpy(*name, it->second->pgid_desc[bwgid],
+				size); /* Localization OK */
 	} else {
 		result = get_persistent(device_name, &attribs);
 		if (result == cmd_success) {
@@ -2273,13 +2271,10 @@ cmd_status get_bwg_descrpt(char *device_name, u8 bwgid, char **name)
 				attribs.descript.pgid_desc[bwgid]) +
 				sizeof(char);
 			*name = (char*)malloc(size);
-			if (*name != NULL) {
-				strncpy(*name,
-					attribs.descript.pgid_desc[bwgid],
-					size); /* Localization OK */
-			} else {
+			if (*name == NULL)
 				goto Error;
-			}
+			memcpy(*name, attribs.descript.pgid_desc[bwgid],
+					size); /* Localization OK */
 		} else {
 			result = cmd_device_not_found;
 		}

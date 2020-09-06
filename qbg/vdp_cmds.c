@@ -107,7 +107,7 @@ static int
 get_arg_tlvtxenable(struct cmd *cmd, char *arg, UNUSED char *argvalue,
 		    char *obuf, int obuf_len)
 {
-	cmd_status good_cmd = vdp_cmdok(cmd, cmd_gettlv);
+	cmd_status good_cmd = vdp_cmdok(cmd, (cmd_status)cmd_gettlv);
 	int value;
 	char *s;
 	char arg_path[VDP_BUF_SIZE];
@@ -135,7 +135,7 @@ get_arg_tlvtxenable(struct cmd *cmd, char *arg, UNUSED char *argvalue,
 static int _set_arg_tlvtxenable(struct cmd *cmd, char *arg, char *argvalue,
 				bool test)
 {
-	cmd_status good_cmd = vdp_cmdok(cmd, cmd_settlv);
+	cmd_status good_cmd = vdp_cmdok(cmd, (cmd_status)cmd_settlv);
 	int value, err;
 	char arg_path[VDP_BUF_SIZE];
 
@@ -325,7 +325,7 @@ out_free:
 
 static int _set_arg_mode(struct cmd *cmd, char *argvalue, bool test)
 {
-	cmd_status good_cmd = vdp_cmdok(cmd, cmd_settlv);
+	cmd_status good_cmd = vdp_cmdok(cmd, (cmd_status)cmd_settlv);
 	struct vsi_profile *profile, *p;
 	struct vdp_data *vd;
 
@@ -376,7 +376,7 @@ static int test_arg_mode(struct cmd *cmd, UNUSED char *arg, char *argvalue,
 static int get_arg_role(struct cmd *cmd, char *arg, UNUSED char *argvalue,
 			char *obuf, int obuf_len)
 {
-	cmd_status good_cmd = vdp_cmdok(cmd, cmd_gettlv);
+	cmd_status good_cmd = vdp_cmdok(cmd, (cmd_status)cmd_gettlv);
 	char arg_path[VDP_BUF_SIZE];
 	const char *p;
 
@@ -397,7 +397,7 @@ static int get_arg_role(struct cmd *cmd, char *arg, UNUSED char *argvalue,
 
 static int _set_arg_role(struct cmd *cmd, char *arg, char *argvalue, bool test)
 {
-	cmd_status good_cmd = vdp_cmdok(cmd, cmd_settlv);
+	cmd_status good_cmd = vdp_cmdok(cmd, (cmd_status)cmd_settlv);
 	struct vdp_data *vd;
 	char arg_path[VDP_BUF_SIZE];
 

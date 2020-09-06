@@ -244,7 +244,7 @@ static int get_arg_evbmode(struct cmd *cmd, char *arg, UNUSED char *argvalue,
 {
 	struct evb22_data *ed;
 	char *s;
-	cmd_status good_cmd = evb22_cmdok(cmd, cmd_gettlv);
+	cmd_status good_cmd = evb22_cmdok(cmd, (cmd_status)cmd_gettlv);
 
 	if (good_cmd != cmd_success)
 		return good_cmd;
@@ -265,7 +265,7 @@ static int set2_arg_evbmode(struct cmd *cmd, char *arg, const char *argvalue,
 {
 	char arg_path[EVB_BUF_SIZE];
 	struct evb22_data *ed;
-	cmd_status good_cmd = evb22_cmdok(cmd, cmd_settlv);
+	cmd_status good_cmd = evb22_cmdok(cmd, (cmd_status)cmd_settlv);
 	u8 mode;
 
 	if (good_cmd != cmd_success)
@@ -369,7 +369,7 @@ static int scan_bool(struct cmd *cmd, char *arg, char *argvalue, bool test,
 	int value;
 	char arg_path[EVB_BUF_SIZE];
 	struct evb22_data *ed;
-	cmd_status good_cmd = evb22_cmdok(cmd, cmd_settlv);
+	cmd_status good_cmd = evb22_cmdok(cmd, (cmd_status)cmd_settlv);
 
 	if (good_cmd != cmd_success)
 		return good_cmd;
@@ -404,7 +404,7 @@ static int show_bool(struct cmd *cmd, char *arg, UNUSED char *argvalue,
 {
 	struct evb22_data *ed;
 	char *s;
-	cmd_status good_cmd = evb22_cmdok(cmd, cmd_gettlv);
+	cmd_status good_cmd = evb22_cmdok(cmd, (cmd_status)cmd_gettlv);
 
 	if (good_cmd != cmd_success)
 		return good_cmd;
@@ -557,7 +557,7 @@ static int scan_31bit(struct cmd *cmd, char *arg, const char *argvalue,
 	struct evb22_data *ed;
 	int value;
 	char *endp;
-	cmd_status good_cmd = evb22_cmdok(cmd, cmd_settlv);
+	cmd_status good_cmd = evb22_cmdok(cmd, (cmd_status)cmd_settlv);
 
 	if (good_cmd != cmd_success)
 		return good_cmd;
@@ -589,7 +589,7 @@ static int show_31bit(struct cmd *cmd, char *arg, UNUSED char *argvalue,
 {
 	struct evb22_data *ed;
 	char s[EVB_BUF_SIZE];
-	cmd_status good_cmd = evb22_cmdok(cmd, cmd_gettlv);
+	cmd_status good_cmd = evb22_cmdok(cmd, (cmd_status)cmd_gettlv);
 
 	if (good_cmd != cmd_success)
 		return good_cmd;

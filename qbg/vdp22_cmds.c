@@ -359,7 +359,7 @@ static int get_vdp22_retval(int rc)
 static int set_arg_vsi3(struct cmd *cmd, char *argvalue, bool test, int size,
 			int oui_size)
 {
-	cmd_status good_cmd = vdp22_cmdok(cmd, cmd_settlv);
+	cmd_status good_cmd = vdp22_cmdok(cmd, (cmd_status)cmd_settlv);
 	int rc;
 	struct vdpnl_vsi vsi;
 	struct vdpnl_mac mac[size];
@@ -558,7 +558,7 @@ out:
 static int get_arg_vsi(struct cmd *cmd, char *arg, char *argvalue,
 		       char *obuf, int obuf_len)
 {
-	cmd_status good_cmd = vdp22_cmdok(cmd, cmd_gettlv);
+	cmd_status good_cmd = vdp22_cmdok(cmd, (cmd_status)cmd_gettlv);
 	struct vdpnl_vsi vsi;
 	char vsi_str[MAX_CLIF_MSGBUF];
 	int rc;

@@ -185,7 +185,7 @@ static int
 get_arg_tlvtxenable(struct cmd *cmd, char *arg, UNUSED char *argvalue,
 		    char *obuf, int obuf_len)
 {
-	cmd_status good_cmd = evb_cmdok(cmd, cmd_gettlv);
+	cmd_status good_cmd = evb_cmdok(cmd, (cmd_status)cmd_gettlv);
 	char *s, arg_path[EVB_BUF_SIZE];
 	int value;
 
@@ -214,7 +214,7 @@ static int _set_arg_tlvtxenable(struct cmd *cmd, char *arg, char *argvalue,
 	int value;
 	char arg_path[EVB_BUF_SIZE];
 	struct evb_data *ed;
-	cmd_status good_cmd = evb_cmdok(cmd, cmd_settlv);
+	cmd_status good_cmd = evb_cmdok(cmd, (cmd_status)cmd_settlv);
 
 	if (good_cmd != cmd_success)
 		return good_cmd;
@@ -280,7 +280,7 @@ static int test_arg_tlvtxenable(struct cmd *cmd, char *arg, char *argvalue,
 static int get_arg_fmode(struct cmd *cmd, char *arg, UNUSED char *argvalue,
 			 char *obuf, int obuf_len)
 {
-	cmd_status good_cmd = evb_cmdok(cmd, cmd_gettlv);
+	cmd_status good_cmd = evb_cmdok(cmd, (cmd_status)cmd_gettlv);
 	char *s;
 	u8 mode;
 
@@ -303,7 +303,7 @@ static int _set_arg_fmode(struct cmd *cmd, const char *argvalue, bool test)
 	u8 smode = 0;
 	char arg_path[EVB_BUF_SIZE];
 	struct evb_data *ed;
-	cmd_status good_cmd = evb_cmdok(cmd, cmd_settlv);
+	cmd_status good_cmd = evb_cmdok(cmd, (cmd_status)cmd_settlv);
 
 	if (good_cmd != cmd_success)
 		return good_cmd;
@@ -362,7 +362,7 @@ get_arg_capabilities(struct cmd *cmd, char *arg, UNUSED char *argvalue,
 	int comma = 0;
 	char t[EVB_BUF_SIZE];
 	u8 scap;
-	cmd_status good_cmd = evb_cmdok(cmd, cmd_gettlv);
+	cmd_status good_cmd = evb_cmdok(cmd, (cmd_status)cmd_gettlv);
 
 	if (good_cmd != cmd_success)
 		return good_cmd;
@@ -428,7 +428,7 @@ _set_arg_capabilities(struct cmd *cmd, const char *argvalue, bool test)
 	u8 scap = 0;
 	char arg_path[EVB_BUF_SIZE];
 	struct evb_data *ed;
-	cmd_status good_cmd = evb_cmdok(cmd, cmd_settlv);
+	cmd_status good_cmd = evb_cmdok(cmd, (cmd_status)cmd_settlv);
 
 	if (good_cmd != cmd_success)
 		return good_cmd;
@@ -479,7 +479,7 @@ static int get_arg_rte(struct cmd *cmd, char *arg, UNUSED char *argvalue,
 {
 	char s[EVB_BUF_SIZE];
 	u8 rte;
-	cmd_status good_cmd = evb_cmdok(cmd, cmd_gettlv);
+	cmd_status good_cmd = evb_cmdok(cmd, (cmd_status)cmd_gettlv);
 
 	if (good_cmd != cmd_success)
 		return good_cmd;
@@ -500,7 +500,7 @@ static int _set_arg_rte(struct cmd *cmd, const char *argvalue, bool test)
 	int value;
 	char arg_path[EVB_BUF_SIZE];
 	struct evb_data *ed = NULL;
-	cmd_status good_cmd = evb_cmdok(cmd, cmd_settlv);
+	cmd_status good_cmd = evb_cmdok(cmd, (cmd_status)cmd_settlv);
 
 	if (good_cmd != cmd_success)
 		return good_cmd;
@@ -550,7 +550,7 @@ static int get_arg_vsis(struct cmd *cmd, char *arg, UNUSED char *argvalue,
 {
 	char s[EVB_BUF_SIZE];
 	u16 svsi;
-	cmd_status good_cmd = evb_cmdok(cmd, cmd_gettlv);
+	cmd_status good_cmd = evb_cmdok(cmd, (cmd_status)cmd_gettlv);
 
 	if (good_cmd != cmd_success)
 		return good_cmd;
@@ -569,7 +569,7 @@ static int _set_arg_vsis(struct cmd *cmd, const char *argvalue, bool test)
 	int value;
 	char arg_path[EVB_BUF_SIZE];
 	struct evb_data *ed;
-	cmd_status good_cmd = evb_cmdok(cmd, cmd_settlv);
+	cmd_status good_cmd = evb_cmdok(cmd, (cmd_status)cmd_settlv);
 
 	if (good_cmd != cmd_success)
 		return good_cmd;

@@ -141,7 +141,7 @@ pkgconfig_DATA = lldpad.pc liblldp_clif.pc
 systemdsystemunitdir = $(prefix)/lib/systemd/system
 dist_systemdsystemunit_DATA = lldpad.service lldpad.socket
 
-bashcompletiondir = $(sysconfdir)/bash_completion.d
+bashcompletiondir = $(prefix)/share/bash-completion/completions
 dist_bashcompletion_DATA = contrib/bash_completion/lldpad contrib/bash_completion/lldptool
 
 AM_DISTCHECK_CONFIGURE_FLAGS = --enable-debug

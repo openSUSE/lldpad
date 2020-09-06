@@ -68,8 +68,8 @@ fi
 %{_sbindir}/*
 %dir /var/lib/lldpad
 %{_sysconfdir}/init.d/lldpad
-%{_sysconfdir}/bash_completion.d/lldpad
-%{_sysconfdir}/bash_completion.d/lldptool
+%{_datadir}/bash-completion/completions/lldpad
+%{_datadir}/bash-completion/completions/lldptool
 %{_mandir}/man8/*
 %{_libdir}/liblldp_clif.*
 

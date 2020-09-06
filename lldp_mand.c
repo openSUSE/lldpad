@@ -111,12 +111,16 @@ static int mand_bld_ip_chassis(struct mand_data *md,
 			       struct tlv_info_chassis *chassis)
 {
 	unsigned int len;
+	struct in_addr addr_v4;
+	struct in6_addr addr_v6;
 
-	if (!get_ipaddr(md->ifname, &chassis->id.na.ip.v4)) {
+	if (!get_ipaddr(md->ifname, &addr_v4)) {
+		chassis->id.na.ip.v4 = addr_v4;
 		chassis->sub = CHASSIS_ID_NETWORK_ADDRESS;
 		chassis->id.na.type = MANADDR_IPV4;
 		len = sizeof(chassis->id.na.ip.v4);
-	} else  if (!get_ipaddr6(md->ifname, &chassis->id.na.ip.v6)) {
+	} else  if (!get_ipaddr6(md->ifname, &addr_v6)) {
+		chassis->id.na.ip.v6 = addr_v6;
 		chassis->sub = CHASSIS_ID_NETWORK_ADDRESS;
 		chassis->id.na.type = MANADDR_IPV6;
 		len = sizeof(chassis->id.na.ip.v6);
@@ -311,6 +315,8 @@ static int mand_bld_portid_tlv(struct mand_data *md, struct lldp_agent *agent)
 	char arg_path[512] = { 0 };
 	struct unpacked_tlv *tlv;
 	struct tlv_info_portid portid;
+	struct in_addr addr_v4;
+	struct in6_addr addr_v6;
 
 
 	/* build only once */
@@ -373,7 +379,8 @@ static int mand_bld_portid_tlv(struct mand_data *md, struct lldp_agent *agent)
 		/* FALLTHROUGH */
 	case PORT_ID_NETWORK_ADDRESS:
 		/* uses ipv4 first */
-		if (!get_ipaddr(md->ifname, &portid.id.na.ip.v4)) {
+		if (!get_ipaddr(md->ifname, &addr_v4)) {
+			portid.id.na.ip.v4 = addr_v4;
 			portid.sub = PORT_ID_NETWORK_ADDRESS;
 			portid.id.na.type = MANADDR_IPV4;
 			length = sizeof(portid.id.na.type) +
@@ -382,7 +389,8 @@ static int mand_bld_portid_tlv(struct mand_data *md, struct lldp_agent *agent)
 			break;
 		}
 		/* ipv4 fails, get ipv6 */
-		if (!get_ipaddr6(md->ifname, &portid.id.na.ip.v6)) {
+		if (!get_ipaddr6(md->ifname, &addr_v6)) {
+			portid.id.na.ip.v6 = addr_v6;
 			portid.sub = PORT_ID_NETWORK_ADDRESS;
 			portid.id.na.type = MANADDR_IPV6;
 			length = sizeof(portid.id.na.type) +

@@ -129,7 +129,7 @@ struct dcbx_tlvs *dcbx_data(const char *ifname)
 	struct dcbd_user_data *dud;
 	struct dcbx_tlvs *tlv = NULL;
 
-	dud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_DCBX);
+	dud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_DCBX);
 	if (dud) {
 		LIST_FOREACH(tlv, &dud->head, entry) {
 			if (!strncmp(tlv->ifname, ifname, IFNAMSIZ))
@@ -148,7 +148,7 @@ int dcbx_tlvs_rxed(const char *ifname, struct lldp_agent *agent)
 	if (agent->type != NEAREST_BRIDGE)
 		return 0;
 
-	dud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_DCBX);
+	dud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_DCBX);
 	if (dud) {
 		LIST_FOREACH(tlv, &dud->head, entry) {
 			if (!strncmp(tlv->ifname, ifname, IFNAMSIZ))
@@ -172,7 +172,7 @@ int dcbx_check_active(const char *ifname)
 	struct dcbd_user_data *dud;
 	struct dcbx_tlvs *tlv = NULL;
 
-	dud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_DCBX);
+	dud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_DCBX);
 	if (dud) {
 		LIST_FOREACH(tlv, &dud->head, entry) {
 			if (!strncmp(tlv->ifname, ifname, IFNAMSIZ))
@@ -285,20 +285,20 @@ void dcbx_free_manifest(struct dcbx_manifest *manifest)
 		return;
 
 	if (manifest->dcbx1)
-		manifest->dcbx1 = free_unpkd_tlv(manifest->dcbx1);
+		free_unpkd_tlv(manifest->dcbx1);
 	if (manifest->dcbx2)
-		manifest->dcbx2 = free_unpkd_tlv(manifest->dcbx2);
+		free_unpkd_tlv(manifest->dcbx2);
 	if (manifest->dcbx_ctrl)
-		manifest->dcbx_ctrl = free_unpkd_tlv(manifest->dcbx_ctrl);
+		free_unpkd_tlv(manifest->dcbx_ctrl);
 	if (manifest->dcbx_pg)
-		manifest->dcbx_pg = free_unpkd_tlv(manifest->dcbx_pg);
+		free_unpkd_tlv(manifest->dcbx_pg);
 	if (manifest->dcbx_pfc)
-		manifest->dcbx_pfc = free_unpkd_tlv(manifest->dcbx_pfc);
+		free_unpkd_tlv(manifest->dcbx_pfc);
 	if (manifest->dcbx_app)
-		manifest->dcbx_app = free_unpkd_tlv(manifest->dcbx_app);
+		free_unpkd_tlv(manifest->dcbx_app);
 	if (manifest->dcbx_llink)
-		manifest->dcbx_llink = free_unpkd_tlv(manifest->dcbx_llink);
-
+		free_unpkd_tlv(manifest->dcbx_llink);
+	free(manifest);
 	return;
 }
 
@@ -307,44 +307,27 @@ void dcbx_free_tlv(struct dcbx_tlvs *tlvs)
 	if (!tlvs)
 		return;
 
-	if (tlvs->control != NULL) {
-		tlvs->control = free_unpkd_tlv(tlvs->control);
-	}
+	if (tlvs->control)
+		free_unpkd_tlv(tlvs->control);
+	if (tlvs->pg1)
+		free_unpkd_tlv(tlvs->pg1);
+	if (tlvs->pg2)
+		free_unpkd_tlv(tlvs->pg2);
+	if (tlvs->pfc1)
+		free_unpkd_tlv(tlvs->pfc1);
+	if (tlvs->pfc2)
+		free_unpkd_tlv(tlvs->pfc2);
+	if (tlvs->app1)
+		free_unpkd_tlv(tlvs->app1);
+	if (tlvs->app2)
+		free_unpkd_tlv(tlvs->app2);
+	if (tlvs->llink)
+		free_unpkd_tlv(tlvs->llink);
+	if (tlvs->dcbx1)
+		free_unpkd_tlv(tlvs->dcbx1);
+	if (tlvs->dcbx2)
+		free_unpkd_tlv(tlvs->dcbx2);
 
-	if (tlvs->pg1 != NULL) {
-		tlvs->pg1 = free_unpkd_tlv(tlvs->pg1);
-	}
-
-	if (tlvs->pg2 != NULL) {
-		tlvs->pg2 = free_unpkd_tlv(tlvs->pg2);
-	}
-
-	if (tlvs->pfc1 != NULL) {
-		tlvs->pfc1 = free_unpkd_tlv(tlvs->pfc1);
-	}
-
-	if (tlvs->pfc2 != NULL) {
-		tlvs->pfc2 = free_unpkd_tlv(tlvs->pfc2);
-	}
-
-	if (tlvs->app1 != NULL) {
-		tlvs->app1 = free_unpkd_tlv(tlvs->app1);
-	}
-
-	if (tlvs->app2 != NULL)
-		tlvs->app2 = free_unpkd_tlv(tlvs->app2);
-
-	if (tlvs->llink != NULL) {
-		tlvs->llink = free_unpkd_tlv(tlvs->llink);
-	}
-
-	if (tlvs->dcbx1 != NULL) {
-		tlvs->dcbx1 = free_unpkd_tlv(tlvs->dcbx1);
-	}
-
-	if (tlvs->dcbx2 != NULL) {
-		tlvs->dcbx2 = free_unpkd_tlv(tlvs->dcbx2);
-	}
 	return;
 }
 
@@ -364,6 +347,7 @@ struct packed_tlv* dcbx_gettlv(struct port *port, struct lldp_agent *agent)
 		return NULL;
 
 	dcbx_free_tlv(tlvs);
+	memset(tlvs, 0, sizeof(struct dcbx_tlvs));
 
 	dcbx_bld_tlv(port, agent);
 	if (tlvs->dcbx_st == DCBX_SUBTYPE2) {
@@ -388,7 +372,6 @@ static void dcbx_free_data(struct dcbd_user_data *dud)
 			LIST_REMOVE(dd, entry);
 			dcbx_free_tlv(dd);
 			dcbx_free_manifest(dd->manifest);
-			free(dd->manifest);
 			free(dd);
 		}
 	}
@@ -410,7 +393,7 @@ struct lldp_module * dcbx_register(void)
 	if (get_dcbx_version(&dcbx_version)) {
 		gdcbx_subtype = dcbx_version;
 	} else {
-		LLDPAD_ERR("failed to get DCBX version");
+		LLDPAD_ERR("failed to get DCBX version\n");
 		goto out_err;
 	}
 
@@ -507,7 +490,7 @@ void dcbx_ifup(char *ifname, struct lldp_agent *agent)
 	ifindex = get_ifidx(ifname);
 	port = port_find_by_ifindex(ifindex);
 
-	dud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_DCBX);
+	dud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_DCBX);
 	tlvs = dcbx_data(ifname);
 
 	if (!port)
@@ -656,7 +639,6 @@ void dcbx_ifdown(char *device_name, struct lldp_agent *agent)
 	LIST_REMOVE(tlvs, entry);
 	dcbx_free_tlv(tlvs);
 	dcbx_free_manifest(tlvs->manifest);
-	free(tlvs->manifest);
 	free(tlvs);
 }
 
@@ -666,26 +648,19 @@ void clear_dcbx_manifest(struct dcbx_tlvs *dcbx)
 		return;
 
 	if (dcbx->manifest->dcbx_llink)
-		dcbx->manifest->dcbx_llink =
-			free_unpkd_tlv(dcbx->manifest->dcbx_llink);
+		free_unpkd_tlv(dcbx->manifest->dcbx_llink);
 	if (dcbx->manifest->dcbx_app)
-		dcbx->manifest->dcbx_app =
-			free_unpkd_tlv(dcbx->manifest->dcbx_app);
+		free_unpkd_tlv(dcbx->manifest->dcbx_app);
 	if (dcbx->manifest->dcbx_pfc)
-		dcbx->manifest->dcbx_pfc =
-			free_unpkd_tlv(dcbx->manifest->dcbx_pfc);
+		free_unpkd_tlv(dcbx->manifest->dcbx_pfc);
 	if (dcbx->manifest->dcbx_pg)
-		dcbx->manifest->dcbx_pg =
-			free_unpkd_tlv(dcbx->manifest->dcbx_pg);
+		free_unpkd_tlv(dcbx->manifest->dcbx_pg);
 	if (dcbx->manifest->dcbx_ctrl)
-		dcbx->manifest->dcbx_ctrl =
-			free_unpkd_tlv(dcbx->manifest->dcbx_ctrl);
+		free_unpkd_tlv(dcbx->manifest->dcbx_ctrl);
 	if (dcbx->manifest->dcbx1)
-		dcbx->manifest->dcbx1 =
-			free_unpkd_tlv(dcbx->manifest->dcbx1);
+		free_unpkd_tlv(dcbx->manifest->dcbx1);
 	if (dcbx->manifest->dcbx2)
-		dcbx->manifest->dcbx2 =
-			free_unpkd_tlv(dcbx->manifest->dcbx2);
+		free_unpkd_tlv(dcbx->manifest->dcbx2);
 	free(dcbx->manifest);
 	dcbx->manifest = NULL;
 }

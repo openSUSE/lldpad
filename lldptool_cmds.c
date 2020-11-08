@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <sys/types.h>
 #include "clif.h"
 #include "dcb_types.h"
 #include "lldptool.h"
@@ -464,7 +465,7 @@ static void print_tlvs(struct cmd *cmd, char *ibuf)
 			offset += 8;
 		
 		printed = 0;
-		LIST_FOREACH(np, &lldp_head, lldp) {
+		LIST_FOREACH(np, &lldp_mod_head, lldp) {
 			if (np->ops->print_tlv(tlvid, tlv_len, ibuf+offset)) {
 					printed = 1;
 					break;

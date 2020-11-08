@@ -119,7 +119,8 @@ static void ecp22_append(u8 *buffer, u32 *pos, void *data, u32 len)
  */
 void ecp22_putnode(struct ecp22_freelist *list, struct ecp22_payload_node *elm)
 {
-	elm->ptlv = free_pkd_tlv(elm->ptlv);
+	free_pkd_tlv(elm->ptlv);
+	elm->ptlv = NULL;
 	if (list->freecnt > ecp22_maxpayload)
 		free(elm);
 	else {
@@ -154,6 +155,7 @@ static bool ecp22_build_ecpdu(struct ecp22 *ecp)
 	memset(ecp->tx.frame, 0, sizeof ecp->tx.frame);
 	ecp22_append(ecp->tx.frame, &fb_offset, (void *)&eth, sizeof eth);
 
+	memset(&ecph, 0, sizeof(struct ecp22_hdr));
 	ecp22_hdr_set_version(&ecph, 1);
 	ecp22_hdr_set_op(&ecph, ECP22_REQUEST);
 	ecp22_hdr_set_subtype(&ecph, ECP22_VDP);
@@ -774,7 +776,7 @@ void ecp22_start(char *ifname)
 	struct ecp22 *ecp;
 
 	LLDPAD_DBG("%s:%s start ecp\n", __func__, ifname);
-	eud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_ECP22);
+	eud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_ECP22);
 	if (!eud) {
 		LLDPAD_DBG("%s:%s no ECP module\n", __func__, ifname);
 		return;
@@ -807,7 +809,7 @@ static void ecp22_removelist(ecp22_list *ptr)
 
 	while ((np = LIST_FIRST(ptr))) {
 		LIST_REMOVE(np, node);
-		np->ptlv = free_pkd_tlv(np->ptlv);
+		free_pkd_tlv(np->ptlv);
 		free(np);
 	}
 }
@@ -837,7 +839,7 @@ void ecp22_stop(char *ifname)
 	struct ecp22 *ecp;
 
 	LLDPAD_DBG("%s:%s stop ecp\n", __func__, ifname);
-	eud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_ECP22);
+	eud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_ECP22);
 	ecp = find_ecpdata(ifname, eud);
 	if (ecp)
 		ecp22_remove(ecp);
@@ -852,7 +854,7 @@ static int ecp22_data_from_evb(char *ifname, struct evb22_to_ecp22 *ptr)
 	struct ecp22_user_data *eud;
 	struct ecp22 *ecp;
 
-	eud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_ECP22);
+	eud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_ECP22);
 	ecp = find_ecpdata(ifname, eud);
 	if (ecp) {
 		ecp->max_rte = ptr->max_rte;
@@ -930,7 +932,7 @@ static int ecp22_req2send(char *ifname, unsigned short subtype,
 
 	LLDPAD_DBG("%s:%s subtype:%d\n", __func__, ifname, subtype);
 
-	eud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_ECP22);
+	eud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_ECP22);
 	ecp = find_ecpdata(ifname, eud);
 	if (!ecp) {
 		rc = -ENODEV;

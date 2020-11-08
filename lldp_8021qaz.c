@@ -48,8 +48,7 @@
 #include "lldp_dcbx.h"
 
 
-struct lldp_head lldp_head;
-struct config_t lldpad_cfg;
+extern config_t lldpad_cfg;
 extern bool read_only_8021qaz;
 
 static int ieee8021qaz_check_pending(struct port *port, struct lldp_agent *);
@@ -84,7 +83,7 @@ static int ieee8021qaz_check_pending(struct port *port,
 	if (!port->portEnabled)
 		return 0;
 
-	iud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_8021QAZ);
+	iud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_8021QAZ);
 	if (iud) {
 		LIST_FOREACH(tlv, &iud->head, entry) {
 			if (!strncmp(port->ifname, tlv->ifname, IFNAMSIZ)) {
@@ -112,14 +111,14 @@ struct lldp_module *ieee8021qaz_register(void)
 
 	mod = malloc(sizeof(*mod));
 	if (!mod) {
-		LLDPAD_ERR("Failed to malloc LLDP-8021QAZ module data");
+		LLDPAD_ERR("Failed to malloc LLDP-8021QAZ module data\n");
 		goto out_err;
 	}
 
 	iud = malloc(sizeof(*iud));
 	if (!iud) {
 		free(mod);
-		LLDPAD_ERR("Failed to malloc LLDP-8021QAZ module user data");
+		LLDPAD_ERR("Failed to malloc LLDP-8021QAZ module user data\n");
 		goto out_err;
 	}
 	memset((void *) iud, 0, sizeof(struct ieee8021qaz_user_data));
@@ -143,7 +142,7 @@ struct ieee8021qaz_tlvs *ieee8021qaz_data(const char *ifname)
 	struct ieee8021qaz_user_data *iud;
 	struct ieee8021qaz_tlvs *tlv = NULL;
 
-	iud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_8021QAZ);
+	iud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_8021QAZ);
 	if (iud) {
 		LIST_FOREACH(tlv, &iud->head, entry) {
 			if (!strncmp(tlv->ifname, ifname, IFNAMSIZ))
@@ -397,7 +396,7 @@ static int read_cfg_file(char *ifname, struct lldp_agent *agent,
 	return 0;
 }
 
-inline int get_prio_map(u32 prio_map, int prio)
+static int get_prio_map(u32 prio_map, int prio)
 {
 	if (prio > 7)
 		return 0;
@@ -405,7 +404,7 @@ inline int get_prio_map(u32 prio_map, int prio)
 	return (prio_map >> (4 * (7-prio))) & 0xF;
 }
 
-inline void set_prio_map(u32 *prio_map, u8 prio, int tc)
+static void set_prio_map(u32 *prio_map, u8 prio, int tc)
 {
 	u32 mask = ~(0xffffffff & (0xF << (4 * (7-prio))));
 	*prio_map &= mask;
@@ -629,7 +628,7 @@ void ieee8021qaz_ifup(char *ifname, struct lldp_agent *agent)
 	LIST_INIT(&tlvs->app_head);
 	read_cfg_file(port->ifname, agent, tlvs);
 
-	iud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_8021QAZ);
+	iud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_8021QAZ);
 	LIST_INSERT_HEAD(&iud->head, tlvs, entry);
 
 initialized:
@@ -1625,15 +1624,15 @@ static void clear_ieee8021qaz_rx(struct ieee8021qaz_tlvs *tlvs)
 		return;
 
 	if (tlvs->rx->ieee8021qaz)
-		tlvs->rx->ieee8021qaz = free_unpkd_tlv(tlvs->rx->ieee8021qaz);
+		free_unpkd_tlv(tlvs->rx->ieee8021qaz);
 	if (tlvs->rx->etscfg)
-		tlvs->rx->etscfg = free_unpkd_tlv(tlvs->rx->etscfg);
+		free_unpkd_tlv(tlvs->rx->etscfg);
 	if (tlvs->rx->etsrec)
-		tlvs->rx->etsrec = free_unpkd_tlv(tlvs->rx->etsrec);
+		free_unpkd_tlv(tlvs->rx->etsrec);
 	if (tlvs->rx->pfc)
-		tlvs->rx->pfc = free_unpkd_tlv(tlvs->rx->pfc);
+		free_unpkd_tlv(tlvs->rx->pfc);
 	if (tlvs->rx->app)
-		tlvs->rx->app =	free_unpkd_tlv(tlvs->rx->app);
+		free_unpkd_tlv(tlvs->rx->app);
 
 	free(tlvs->rx);
 	tlvs->rx = NULL;
@@ -2021,13 +2020,13 @@ static void ieee8021qaz_free_rx(struct ieee8021qaz_unpkd_tlvs *rx)
 		return;
 
 	if (rx->etscfg)
-		rx->etscfg = free_unpkd_tlv(rx->etscfg);
+		free_unpkd_tlv(rx->etscfg);
 	if (rx->etsrec)
-		rx->etsrec = free_unpkd_tlv(rx->etsrec);
+		free_unpkd_tlv(rx->etsrec);
 	if (rx->pfc)
-		rx->pfc = free_unpkd_tlv(rx->pfc);
+		free_unpkd_tlv(rx->pfc);
 	if (rx->app)
-		rx->app = free_unpkd_tlv(rx->app);
+		free_unpkd_tlv(rx->app);
 
 	return;
 }
@@ -2113,9 +2112,9 @@ static void ieee8021qaz_free_tlv(struct ieee8021qaz_tlvs *tlvs)
 		return;
 
 	if (tlvs->ets)
-		tlvs->ets = free_ets_tlv(tlvs->ets);
+		free_ets_tlv(tlvs->ets);
 	if (tlvs->pfc)
-		tlvs->pfc = free_pfc_tlv(tlvs->pfc);
+		free_pfc_tlv(tlvs->pfc);
 
 	/* Remove _all_ existing application data */
 	LIST_FOREACH(np, &tlvs->app_head, entry)
@@ -2179,7 +2178,7 @@ int ieee8021qaz_tlvs_rxed(const char *ifname)
 	struct ieee8021qaz_user_data *iud;
 	struct ieee8021qaz_tlvs *tlv = NULL;
 
-	iud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_8021QAZ);
+	iud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_8021QAZ);
 	if (iud) {
 		LIST_FOREACH(tlv, &iud->head, entry) {
 			if (!strncmp(tlv->ifname, ifname, IFNAMSIZ))
@@ -2198,7 +2197,7 @@ int ieee8021qaz_check_active(const char *ifname)
 	struct ieee8021qaz_user_data *iud;
 	struct ieee8021qaz_tlvs *tlv = NULL;
 
-	iud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_8021QAZ);
+	iud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_8021QAZ);
 	if (iud) {
 		LIST_FOREACH(tlv, &iud->head, entry) {
 			if (!strncmp(tlv->ifname, ifname, IFNAMSIZ))

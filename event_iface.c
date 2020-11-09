@@ -77,7 +77,7 @@ static void event_if_decode_rta(int type, struct rtattr *rta, int *ls, char *d)
 		LLDPAD_DBG(" IFLA_BROADCAST\n");
 		break;
 	case IFLA_IFNAME:
-		strncpy(d, (char *)RTA_DATA(rta), IFNAMSIZ);
+		STRNCPY_TERMINATED(d, (char *)RTA_DATA(rta), IFNAMSIZ);
 		LLDPAD_DBG(" IFLA_IFNAME\n");
 		LLDPAD_DBG("        device name is %s\n", d);
 		break;
@@ -205,6 +205,9 @@ int oper_add_device(char *device_name)
 		port = newport;
 	} else if (is_bond(device_name) || !port->portEnabled)
 		reinit_port(device_name);
+	else if (port->portEnabled) {
+		return 0;
+	}
 
 	lldp_add_agent(device_name, NEAREST_BRIDGE);
 	lldp_add_agent(device_name, NEAREST_NONTPMR_BRIDGE);
@@ -213,7 +216,7 @@ int oper_add_device(char *device_name)
 	LIST_FOREACH(agent, &port->agent_head, entry) {
 		LLDPAD_DBG("%s: calling ifup for agent %p.\n",
 			   __func__, agent);
-		LIST_FOREACH(np, &lldp_head, lldp) {
+		LIST_FOREACH(np, &lldp_mod_head, lldp) {
 			if (np->ops->lldp_mod_ifup)
 				np->ops->lldp_mod_ifup(device_name, agent);
 		}
@@ -280,7 +283,7 @@ static void event_if_decode_nlmsg(int route_type, void *data, int len)
 			LIST_FOREACH(agent, &port->agent_head, entry) {
 				LLDPAD_DBG("%s: calling ifdown for agent %p.\n",
 					   __func__, agent);
-				LIST_FOREACH(np, &lldp_head, lldp) {
+				LIST_FOREACH(np, &lldp_mod_head, lldp) {
 					ops = np->ops;
 					if (ops->lldp_mod_ifdown)
 						ops->lldp_mod_ifdown(device_name,

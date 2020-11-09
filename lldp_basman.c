@@ -75,8 +75,6 @@ struct tlv_info_manaddr {
 	struct tlv_info_maoid o;
 } __attribute__ ((__packed__));
 
-extern struct lldp_head lldp_head;
-
 static const struct lldp_mod_ops basman_ops =  {
 	.lldp_mod_register 	= basman_register,
 	.lldp_mod_unregister 	= basman_unregister,
@@ -91,7 +89,7 @@ static struct basman_data *basman_data(const char *ifname, enum agent_type type)
 	struct basman_user_data *bud;
 	struct basman_data *bd = NULL;
 
-	bud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_BASIC);
+	bud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_BASIC);
 	if (bud) {
 		LIST_FOREACH(bd, &bud->head, entry) {
 			if (!strncmp(ifname, bd->ifname, IFNAMSIZ) &&
@@ -636,7 +634,7 @@ struct packed_tlv *basman_gettlv(struct port *port, struct lldp_agent *agent)
 		PACK_TLV_AFTER(bd->manaddr[i], ptlv, size, out_free);
 	return ptlv;
 out_free:
-	ptlv = free_pkd_tlv(ptlv);
+	free_pkd_tlv(ptlv);
 out_err:
 	LLDPAD_DBG("%s:%s: failed\n", __func__, port->ifname);
 	return NULL;
@@ -679,7 +677,7 @@ void basman_ifup(char *ifname, struct lldp_agent *agent)
 		goto out_err;
 	}
 	memset(bd, 0, sizeof(struct basman_data));
-	strncpy(bd->ifname, ifname, IFNAMSIZ);
+	STRNCPY_TERMINATED(bd->ifname, ifname, IFNAMSIZ);
 	bd->agenttype = agent->type;
 
 	if (basman_bld_tlv(bd, agent)) {
@@ -688,7 +686,7 @@ void basman_ifup(char *ifname, struct lldp_agent *agent)
 		goto out_err;
 	}
 
-	bud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_BASIC);
+	bud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_BASIC);
 	LIST_INSERT_HEAD(&bud->head, bd, entry);
 	LLDPAD_DBG("%s:port %s added\n", __func__, ifname);
 	return;

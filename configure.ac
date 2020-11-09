@@ -1,4 +1,4 @@
-AC_INIT([lldpad], [1.0.1], [lldp-devel@open-lldp.org])
+AC_INIT([lldpad], [1.1.0], [lldp-devel@open-lldp.org])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 
 m4_pattern_allow([AM_PROG_AR])
@@ -24,6 +24,43 @@ if test "x$LEX" = x:
 then
  AC_MSG_ERROR([no suitable flex found. Please install the 'flex' package.])
 fi
+
+dnl Begin determine the systemd use and location
+PKG_CHECK_MODULES([SYSTEMD], [systemd], use_systemd=yes, use_systemd=no)
+
+dnl Configure developer type flags
+OPENLLDP_CHECK_WARNINGS
+OPENLLDP_CHECK_ERROR
+
+dnl Set sysvinit values, if system has systemd it will be rewritten
+AC_SUBST(SPEC_BUILD_REQUIRES_POST, "chkconfig")
+AC_SUBST(SPEC_BUILD_REQUIRES_PREUN, "chkconfig initscripts")
+AC_SUBST(SPEC_BUILD_REQUIRES_POSTUN, "initscripts")
+specfile_install="%{_sysconfdir}/init.d/lldpad"
+specfile_install_socket=""
+
+if test "x$use_systemd" == xyes; then
+        dir=""
+        AC_ARG_WITH([systemdsystemunitdir],
+                AS_HELP_STRING([--with-systemdsystem unitdir=DIR],
+                 [Directory for systemd service files default from pkg-config variable systemdsystemunitdir]),
+                [dir=${withval}],
+                [dir="$($PKG_CONFIG --variable=systemdsystemunitdir systemd)"])
+
+	systemdsystemunitdir=${dir}
+	AC_SUBST(SYSTEMD_SYSTEM_UNIT_DIR, [$systemdsystemunitdir])
+	specfile_install="$systemdsystemunitdir/lldpad.service"	
+	specfile_install_socket="$systemdsystemunitdir/lldpad.socket"
+
+	AC_SUBST(SPEC_BUILD_REQUIRES_POST, "systemd")
+	AC_SUBST(SPEC_BUILD_REQUIRES_PREUN, "systemd")
+	AC_SUBST(SPEC_BUILD_REQUIRES_POSTUN, "systemd")
+fi
+
+AM_CONDITIONAL(SYSTEMD_SYSTEM, test "x$use_systemd" == xyes)
+AC_SUBST(SPEC_FILE_LLDPAD_SERVICE, $specfile_install)
+AC_SUBST(SPEC_FILE_LLDPAD_SOCKET, $specfile_install_socket)
+dnl End systemd stuff
 
 PKG_CHECK_MODULES([LIBCONFIG], [libconfig >= 1.3.2])
 PKG_CHECK_MODULES([LIBNL], [libnl-3.0 >= 3.2])

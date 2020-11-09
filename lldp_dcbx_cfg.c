@@ -703,7 +703,7 @@ static int _set_persistent(char *device_name, int dcb_enable,
 	return 0;
 
 set_error:
-	LLDPAD_ERR("update of config file %s failed for %s",
+	LLDPAD_ERR("update of config file %s failed for %s\n",
 		   cfg_file_name, device_name);
 	return cmd_failed;
 }
@@ -799,12 +799,8 @@ int get_persistent(char *device_name, full_dcb_attribs *attribs)
 
 	/* init the internal data store for device_name */
 	result = get_default_persistent(device_name, attribs);
-	if (NULL == eth_settings) {
-		assert(memcmp(device_name, DEF_CFG_STORE, 
-			strlen(DEF_CFG_STORE)));
-
+	if (NULL == eth_settings)
 		return result;
-	}
 
 	/* Read pfc setting */
 	if (get_int_config(eth_settings, "pfc_enable", TYPE_BOOL,

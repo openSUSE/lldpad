@@ -188,7 +188,7 @@ struct vdp_data *vdp_data(char *ifname)
 	struct vdp_user_data *ud;
 	struct vdp_data *vd = NULL;
 
-	ud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_VDP02);
+	ud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_VDP02);
 	if (ud) {
 		LIST_FOREACH(vd, &ud->head, entry) {
 			if (!strncmp(ifname, vd->ifname, IFNAMSIZ))
@@ -879,7 +879,7 @@ static bool vdp_vsi_set_bridge_state(struct vsi_profile *profile)
 {
 	switch(profile->state) {
 	case VSI_UNASSOCIATED:
-		if ((profile->mode == VDP_MODE_DEASSOCIATE)) /* || (INACTIVE)) */ {
+		if (profile->mode == VDP_MODE_DEASSOCIATE) {
 			vdp_vsi_change_bridge_state(profile, VSI_DEASSOC_PROCESSING);
 			return true;
 		} else if (profile->mode == VDP_MODE_ASSOCIATE) {
@@ -1198,9 +1198,9 @@ int vdp_indicate(struct vdp_data *vd, struct unpacked_tlv *tlv)
 			/* put it in the list  */
 			profile->state = VSI_UNASSOCIATED;
 			LIST_INSERT_HEAD(&vd->profile_head, profile, profile);
-		}
 
-		vdp_vsi_sm_bridge(profile);
+			vdp_vsi_sm_bridge(profile);
+		}
 	}
 
 	return 0;
@@ -1357,7 +1357,7 @@ struct packed_tlv *vdp_gettlv(struct vdp_data *vd, struct vsi_profile *profile)
 	return ptlv;
 
 out_free:
-	ptlv = free_pkd_tlv(ptlv);
+	free_pkd_tlv(ptlv);
 out_err:
 	LLDPAD_ERR("%s: %s failed\n", __func__, vd->ifname);
 	return NULL;
@@ -1607,7 +1607,7 @@ void vdp_ifup(char *ifname, struct lldp_agent *agent)
 			 __func__, ifname, sizeof(*vd));
 		goto out_err;
 	}
-	strncpy(vd->ifname, ifname, IFNAMSIZ);
+	STRNCPY_TERMINATED(vd->ifname, ifname, IFNAMSIZ);
 
 	vd->role = VDP_ROLE_STATION;
 	vd->enabletx = enabletx;
@@ -1624,7 +1624,7 @@ void vdp_ifup(char *ifname, struct lldp_agent *agent)
 
 	LIST_INIT(&vd->profile_head);
 
-	ud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_VDP02);
+	ud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_VDP02);
 	LIST_INSERT_HEAD(&ud->head, vd, entry);
 
 out_start_again:
@@ -1882,7 +1882,7 @@ int vdp_trigger(struct vsi_profile *profile)
 	if (!macp->req_pid)
 		return 0;
 	sleep(1);		/* Delay message notification */
-	if (!profile->port || !profile->port->ifname) {
+	if (!profile->port || !profile->port->ifname[0]) {
 		LLDPAD_ERR("%s: no ifname found for profile %p:\n", __func__,
 			   profile);
 		goto error_exit;

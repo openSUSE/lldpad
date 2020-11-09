@@ -48,8 +48,8 @@
 #include "lldp_dcbx.h"
 
 
-struct lldp_head lldp_head;
-struct config_t lldpad_cfg;
+extern config_t lldpad_cfg;
+extern bool read_only_8021qaz;
 
 static int ieee8021qaz_check_pending(struct port *port, struct lldp_agent *);
 static void run_all_sm(struct port *port, struct lldp_agent *agent);
@@ -83,7 +83,7 @@ static int ieee8021qaz_check_pending(struct port *port,
 	if (!port->portEnabled)
 		return 0;
 
-	iud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_8021QAZ);
+	iud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_8021QAZ);
 	if (iud) {
 		LIST_FOREACH(tlv, &iud->head, entry) {
 			if (!strncmp(port->ifname, tlv->ifname, IFNAMSIZ)) {
@@ -111,14 +111,14 @@ struct lldp_module *ieee8021qaz_register(void)
 
 	mod = malloc(sizeof(*mod));
 	if (!mod) {
-		LLDPAD_ERR("Failed to malloc LLDP-8021QAZ module data");
+		LLDPAD_ERR("Failed to malloc LLDP-8021QAZ module data\n");
 		goto out_err;
 	}
 
 	iud = malloc(sizeof(*iud));
 	if (!iud) {
 		free(mod);
-		LLDPAD_ERR("Failed to malloc LLDP-8021QAZ module user data");
+		LLDPAD_ERR("Failed to malloc LLDP-8021QAZ module user data\n");
 		goto out_err;
 	}
 	memset((void *) iud, 0, sizeof(struct ieee8021qaz_user_data));
@@ -142,7 +142,7 @@ struct ieee8021qaz_tlvs *ieee8021qaz_data(const char *ifname)
 	struct ieee8021qaz_user_data *iud;
 	struct ieee8021qaz_tlvs *tlv = NULL;
 
-	iud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_8021QAZ);
+	iud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_8021QAZ);
 	if (iud) {
 		LIST_FOREACH(tlv, &iud->head, entry) {
 			if (!strncmp(tlv->ifname, ifname, IFNAMSIZ))
@@ -203,37 +203,36 @@ static void set_ets_tsa_map(const char *arg, u8 *tsa_map)
 	free(argcpy);
 }
 
-bool read_cfg_file_willing(char *ifname, struct lldp_agent *agent, int tlv_type)
-{
-	char arg_path[256];
-	int res, willing = 0;
-
-	snprintf(arg_path, sizeof(arg_path), "%s%08x.%s", TLVID_PREFIX, 
-		TLVID_8021(tlv_type), ARG_WILLING);
-	res = get_config_setting(ifname, agent->type, arg_path, &willing, 
-		CONFIG_TYPE_INT);
- 	
-	return (res == 0 ? willing == 1 : true); 
-}
-
 static int read_cfg_file(char *ifname, struct lldp_agent *agent,
 			 struct ieee8021qaz_tlvs *tlvs)
 {
 	const char *arg = NULL;
 	char arg_path[256];
 	int res = 0, i;
-	int pfc_mask, delay;
+	int willing, pfc_mask, delay;
 
 	if (agent->type != NEAREST_BRIDGE)
 		return 0;
 
 	/* Read ETS-CFG willing bit -- default willing enabled */
-	tlvs->ets->cfgl->willing = read_cfg_file_willing(
-			ifname, agent, LLDP_8021QAZ_ETSCFG);
+	snprintf(arg_path, sizeof(arg_path), "%s%08x.%s", TLVID_PREFIX,
+		 TLVID_8021(LLDP_8021QAZ_ETSCFG), ARG_WILLING);
+	res = get_config_setting(ifname, agent->type, arg_path, &willing,
+				 CONFIG_TYPE_INT);
+	if (!res)
+		tlvs->ets->cfgl->willing = !!willing;
+	else
+		tlvs->ets->cfgl->willing = 1;
 
 	/* Read PFC willing bit -- default willing enabled */
-	tlvs->pfc->local.willing = read_cfg_file_willing(
-			ifname, agent, LLDP_8021QAZ_PFC);
+	snprintf(arg_path, sizeof(arg_path), "%s%08x.%s", TLVID_PREFIX,
+		 TLVID_8021(LLDP_8021QAZ_PFC), ARG_WILLING);
+	res = get_config_setting(ifname, agent->type, arg_path, &willing,
+				 CONFIG_TYPE_INT);
+	if (!res)
+		tlvs->pfc->local.willing = !!willing;
+	else
+		tlvs->pfc->local.willing = 1;
 
 	/* Read and parse ETS-CFG priority map --
 	 * default all priorities TC0
@@ -397,7 +396,7 @@ static int read_cfg_file(char *ifname, struct lldp_agent *agent,
 	return 0;
 }
 
-inline int get_prio_map(u32 prio_map, int prio)
+static int get_prio_map(u32 prio_map, int prio)
 {
 	if (prio > 7)
 		return 0;
@@ -405,7 +404,7 @@ inline int get_prio_map(u32 prio_map, int prio)
 	return (prio_map >> (4 * (7-prio))) & 0xF;
 }
 
-inline void set_prio_map(u32 *prio_map, u8 prio, int tc)
+static void set_prio_map(u32 *prio_map, u8 prio, int tc)
 {
 	u32 mask = ~(0xffffffff & (0xF << (4 * (7-prio))));
 	*prio_map &= mask;
@@ -591,7 +590,7 @@ void ieee8021qaz_ifup(char *ifname, struct lldp_agent *agent)
 	memset(tlvs->rx, 0, sizeof(*tlvs->rx));
 
 	/* Initializing the ieee8021qaz_tlvs struct */
-	strncpy(tlvs->ifname, ifname, IFNAMSIZ);
+	STRNCPY_TERMINATED(tlvs->ifname, ifname, IFNAMSIZ);
 	tlvs->port = port;
 	tlvs->ieee8021qazdu = 0;
 	l2_packet_get_own_src_addr(port->l2, tlvs->local_mac);
@@ -629,7 +628,7 @@ void ieee8021qaz_ifup(char *ifname, struct lldp_agent *agent)
 	LIST_INIT(&tlvs->app_head);
 	read_cfg_file(port->ifname, agent, tlvs);
 
-	iud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_8021QAZ);
+	iud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_8021QAZ);
 	LIST_INSERT_HEAD(&iud->head, tlvs, entry);
 
 initialized:
@@ -960,6 +959,9 @@ static int del_ieee_hw(const char *ifname, struct dcb_app *app_data)
 			   .dcb_pad = 0
 			  };
 
+	if (read_only_8021qaz)
+		return 0;
+
 	nlsocket = nl_socket_alloc();
 	if (!nlsocket) {
 		LLDPAD_WARN("%s: %s: nl_handle_alloc failed\n",
@@ -1042,6 +1044,9 @@ static int set_ieee_hw(const char *ifname, struct ieee_ets *ets_data,
 			   .cmd = DCB_CMD_IEEE_SET,
 			   .dcb_pad = 0
 			  };
+
+	if (read_only_8021qaz)
+		return 0;
 
 	nlsocket = nl_socket_alloc();
 	if (!nlsocket) {
@@ -1179,10 +1184,9 @@ static void ets_rec_to_ieee(struct ieee_ets *ieee, struct etsrec_obj *rec)
 void run_all_sm(struct port *port, struct lldp_agent *agent)
 {
 	struct ieee8021qaz_tlvs *tlvs;
-	struct ieee_ets *ets = NULL;
-	struct ieee_pfc *pfc = NULL;
+	struct ieee_ets *ets;
+	struct ieee_pfc *pfc;
 	struct pfc_obj *pfc_obj;
-	bool willing;
 
 	if (agent->type != NEAREST_BRIDGE)
 		return;
@@ -1193,49 +1197,39 @@ void run_all_sm(struct port *port, struct lldp_agent *agent)
 
 	ets_sm(tlvs->ets->cfgl, tlvs->ets->recr, &tlvs->ets->current_state);
 
-	willing = read_cfg_file_willing(port->ifname, agent, 
-					LLDP_8021QAZ_ETSCFG);
-
-	if(willing) {
-		ets = malloc(sizeof(*ets));
-		if (!ets) {
-			LLDPAD_WARN("%s: %s: ets malloc failed\n",
-				    __func__, port->ifname);
-			return;
-		}
-	
-		memset(ets, 0, sizeof(*ets));
-	
-		if (tlvs->ets->current_state == RX_RECOMMEND)
-			ets_rec_to_ieee(ets, tlvs->ets->recr);
-		else
-			ets_cfg_to_ieee(ets, tlvs->ets->cfgl);
+	ets = malloc(sizeof(*ets));
+	if (!ets) {
+		LLDPAD_WARN("%s: %s: ets malloc failed\n",
+			    __func__, port->ifname);
+		return;
 	}
+
+	memset(ets, 0, sizeof(*ets));
+
+	if (tlvs->ets->current_state == RX_RECOMMEND)
+		ets_rec_to_ieee(ets, tlvs->ets->recr);
+	else
+		ets_cfg_to_ieee(ets, tlvs->ets->cfgl);
 
 	pfc_sm(tlvs);
 
-	willing = read_cfg_file_willing(port->ifname, agent,
-					LLDP_8021QAZ_PFC);
+	if (tlvs->pfc->current_state == RX_RECOMMEND)
+		pfc_obj = &tlvs->pfc->remote;
+	else
+		pfc_obj = &tlvs->pfc->local;
 
-	if(willing) {
-		if (tlvs->pfc->current_state == RX_RECOMMEND)
-			pfc_obj = &tlvs->pfc->remote;
-		else
-			pfc_obj = &tlvs->pfc->local;
-	
-		pfc = malloc(sizeof(*pfc));
-		if (!pfc) {
-			LLDPAD_WARN("%s: %s: pfc malloc failed\n",
-				    __func__, port->ifname);
-			goto out;
-		}
-	
-		memset(pfc, 0, sizeof(*pfc));
-	
-		pfc->pfc_en = pfc_obj->pfc_enable;
-		pfc->mbc = pfc_obj->mbc;
-		pfc->delay = pfc_obj->delay;
+	pfc = malloc(sizeof(*pfc));
+	if (!pfc) {
+		LLDPAD_WARN("%s: %s: pfc malloc failed\n",
+			    __func__, port->ifname);
+		goto out;
 	}
+
+	memset(pfc, 0, sizeof(*pfc));
+
+	pfc->pfc_en = pfc_obj->pfc_enable;
+	pfc->mbc = pfc_obj->mbc;
+	pfc->delay = pfc_obj->delay;
 
 	if (ieee8021qaz_check_active(port->ifname)) {
 		set_dcbx_mode(port->ifname,
@@ -1630,15 +1624,15 @@ static void clear_ieee8021qaz_rx(struct ieee8021qaz_tlvs *tlvs)
 		return;
 
 	if (tlvs->rx->ieee8021qaz)
-		tlvs->rx->ieee8021qaz = free_unpkd_tlv(tlvs->rx->ieee8021qaz);
+		free_unpkd_tlv(tlvs->rx->ieee8021qaz);
 	if (tlvs->rx->etscfg)
-		tlvs->rx->etscfg = free_unpkd_tlv(tlvs->rx->etscfg);
+		free_unpkd_tlv(tlvs->rx->etscfg);
 	if (tlvs->rx->etsrec)
-		tlvs->rx->etsrec = free_unpkd_tlv(tlvs->rx->etsrec);
+		free_unpkd_tlv(tlvs->rx->etsrec);
 	if (tlvs->rx->pfc)
-		tlvs->rx->pfc = free_unpkd_tlv(tlvs->rx->pfc);
+		free_unpkd_tlv(tlvs->rx->pfc);
 	if (tlvs->rx->app)
-		tlvs->rx->app =	free_unpkd_tlv(tlvs->rx->app);
+		free_unpkd_tlv(tlvs->rx->app);
 
 	free(tlvs->rx);
 	tlvs->rx = NULL;
@@ -2026,13 +2020,13 @@ static void ieee8021qaz_free_rx(struct ieee8021qaz_unpkd_tlvs *rx)
 		return;
 
 	if (rx->etscfg)
-		rx->etscfg = free_unpkd_tlv(rx->etscfg);
+		free_unpkd_tlv(rx->etscfg);
 	if (rx->etsrec)
-		rx->etsrec = free_unpkd_tlv(rx->etsrec);
+		free_unpkd_tlv(rx->etsrec);
 	if (rx->pfc)
-		rx->pfc = free_unpkd_tlv(rx->pfc);
+		free_unpkd_tlv(rx->pfc);
 	if (rx->app)
-		rx->app = free_unpkd_tlv(rx->app);
+		free_unpkd_tlv(rx->app);
 
 	return;
 }
@@ -2118,9 +2112,9 @@ static void ieee8021qaz_free_tlv(struct ieee8021qaz_tlvs *tlvs)
 		return;
 
 	if (tlvs->ets)
-		tlvs->ets = free_ets_tlv(tlvs->ets);
+		free_ets_tlv(tlvs->ets);
 	if (tlvs->pfc)
-		tlvs->pfc = free_pfc_tlv(tlvs->pfc);
+		free_pfc_tlv(tlvs->pfc);
 
 	/* Remove _all_ existing application data */
 	LIST_FOREACH(np, &tlvs->app_head, entry)
@@ -2184,7 +2178,7 @@ int ieee8021qaz_tlvs_rxed(const char *ifname)
 	struct ieee8021qaz_user_data *iud;
 	struct ieee8021qaz_tlvs *tlv = NULL;
 
-	iud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_8021QAZ);
+	iud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_8021QAZ);
 	if (iud) {
 		LIST_FOREACH(tlv, &iud->head, entry) {
 			if (!strncmp(tlv->ifname, ifname, IFNAMSIZ))
@@ -2203,7 +2197,7 @@ int ieee8021qaz_check_active(const char *ifname)
 	struct ieee8021qaz_user_data *iud;
 	struct ieee8021qaz_tlvs *tlv = NULL;
 
-	iud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_8021QAZ);
+	iud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_8021QAZ);
 	if (iud) {
 		LIST_FOREACH(tlv, &iud->head, entry) {
 			if (!strncmp(tlv->ifname, ifname, IFNAMSIZ))

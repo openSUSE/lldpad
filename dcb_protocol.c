@@ -2273,7 +2273,6 @@ cmd_status get_bwg_descrpt(char *device_name, u8 bwgid, char **name)
 			} else {
 				goto Error;
 			}
-					size); /* Localization OK */
 		} else {
 			result = cmd_device_not_found;
 		}

@@ -1,4 +1,4 @@
-AC_INIT([lldpad], [1.1.0], [lldp-devel@open-lldp.org])
+AC_INIT([lldpad], [1.2.99], [lldp-devel@open-lldp.org])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 
 m4_pattern_allow([AM_PROG_AR])
@@ -31,6 +31,8 @@ PKG_CHECK_MODULES([SYSTEMD], [systemd], use_systemd=yes, use_systemd=no)
 dnl Configure developer type flags
 OPENLLDP_CHECK_WARNINGS
 OPENLLDP_CHECK_ERROR
+OPENLLDP_CHECK_UBSAN
+OPENLLDP_CHECK_ASAN
 
 dnl Set sysvinit values, if system has systemd it will be rewritten
 AC_SUBST(SPEC_BUILD_REQUIRES_POST, "chkconfig")
@@ -116,7 +118,6 @@ AC_CHECK_HEADERS([syslog.h])
 
 AC_C_INLINE
 AC_FUNC_CHOWN
-AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_HEADER_STDBOOL
 AC_PREREQ

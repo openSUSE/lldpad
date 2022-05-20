@@ -58,22 +58,25 @@ config_t lldpad_cfg;
 /*
  * init_cfg - initialze the global lldpad_cfg via config_init
  *
- * Returns true (1) for succes and false (0) for failed
+ * Returns status from said initialization
  *
  * check to see if lldpad_cfs is already initailzied
+ *
+ * NOTE: return value can be used in a call to exit(), so that
+ * callers can tell why the config initializatio failed.
  */
-int init_cfg(void)
+enum init_cfg_status init_cfg(void)
 {
 	const char *p;
-	int err = 1;
+	enum init_cfg_status res = INIT_CFG_SUCCESS;
 
 	config_init(&lldpad_cfg);
 
 	if (check_cfg_file()) {
-		err = 0;
+		res = INIT_CFG_FAILED_CREATE;
 		LLDPAD_INFO("%s: failed to create config file\n", __func__);
 	} else if (!config_read_file(&lldpad_cfg, cfg_file_name)) {
-		err = 0;
+		res = INIT_CFG_FAILED_LOAD;
 		LLDPAD_INFO("%s: config file failed to load\n", __func__);
 	} else if (config_lookup_string(&lldpad_cfg, "version", &p)) {
 		LLDPAD_INFO("%s: config file version incorrect ", __func__);
@@ -82,9 +85,9 @@ int init_cfg(void)
 		remove(cfg_file_name);
 		if (check_cfg_file() ||
 		    !config_read_file(&lldpad_cfg, cfg_file_name))
-			err = 0;
+			res = INIT_CFG_FAILED_NO_VERSION;
 	}
-	return err;
+	return res;
 }
 
 /*
@@ -362,6 +365,10 @@ void init_ports(void)
 
 		if (!valid)
 			continue;
+
+		/*
+		 * XXX is this the proper place to filter on NIC type/name/etc?
+		 */
 
 		port = add_port(p->if_index, p->if_name);
 		if (!port) {

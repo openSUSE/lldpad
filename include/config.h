@@ -106,7 +106,14 @@ int get_int_config(config_setting_t *s, char *attr, int int_type, int *result);
 int get_array_config(config_setting_t *s, char *attr, int int_type,
 		     int *result);
 
-int init_cfg(void);
+enum init_cfg_status {
+	INIT_CFG_SUCCESS = 0,
+	INIT_CFG_FAILED_CREATE = 1,
+	INIT_CFG_FAILED_LOAD = 2,
+	INIT_CFG_FAILED_NO_VERSION = 3,
+};
+
+enum init_cfg_status init_cfg(void);
 void destroy_cfg(void);
 int check_cfg_file(void);
 int check_for_old_file_format(void);

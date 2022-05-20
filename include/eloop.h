@@ -41,6 +41,16 @@ typedef enum {
 } eloop_event_type;
 
 /**
+ * ELOOP_DEFAULT_TIMEOUT -- default timeout for eloop
+ */
+#define ELOOP_DEFAULT_TIMEOUT 2
+
+/**
+ * eloop_timeout -- eloop timeout in seconds
+ */
+extern int eloop_timeout;
+
+/**
  * eloop_sock_handler - eloop socket event callback type
  * @sock: File descriptor number for the socket
  * @eloop_ctx: Registered callback context data (eloop_data)

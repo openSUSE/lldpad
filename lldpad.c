@@ -128,7 +128,7 @@ static void usage(void)
 {
 	fprintf(stderr,
 		"\n"
-		"usage: lldpad [-hdksptv] [-f configfile] [-V level]"
+		"usage: lldpad [-hdksptv] [-f configfile] [-V level] [-T eloop-timeout]"
 		"\n"
 		"options:\n"
 		"   -h  show this usage\n"
@@ -140,7 +140,9 @@ static void usage(void)
 		"   -v  show version\n"
 		"   -f  use configfile instead of default\n"
 		"   -V  set syslog level\n"
-		"   -R  run 8021qaz module in read_only mode\n");
+		"   -R  run 8021qaz module in read_only mode\n"
+		"   -T  set eloop timeout in seconds (default/minimum %d)\n",
+		ELOOP_DEFAULT_TIMEOUT);
 
 	exit(1);
 }
@@ -176,6 +178,8 @@ static void remove_all_adapters(void)
 void
 lldpad_reconfig(UNUSED int sig, UNUSED void *eloop_ctx, UNUSED void *signal_ctx)
 {
+	enum init_cfg_status res;
+
 	LLDPAD_WARN("lldpad: SIGHUP received reinit...");
 	/* Send LLDP SHUTDOWN frames and deinit modules */
 	clean_lldp_agents();
@@ -184,7 +188,11 @@ lldpad_reconfig(UNUSED int sig, UNUSED void *eloop_ctx, UNUSED void *signal_ctx)
 	destroy_cfg();
 
 	/* Reinit config file and modules */
-	init_cfg();
+	res = init_cfg();
+	if (res != INIT_CFG_SUCCESS) {
+		LLDPAD_ERR("failed to initialize configuration file\n");
+		exit(res);
+	}
 	init_modules();
 	init_ports();
 
@@ -238,9 +246,10 @@ int main(int argc, char *argv[])
 	pid_t pid;
 	int cnt;
 	int rc = 1;
+	enum init_cfg_status res;
 
 	for (;;) {
-		c = getopt(argc, argv, "hdksptvf:RV:");
+		c = getopt(argc, argv, "hdksptvf:RV:T:");
 		if (c < 0)
 			break;
 		switch (c) {
@@ -278,6 +287,15 @@ int main(int argc, char *argv[])
 				loglvl = LOG_DEBUG;
 			if (loglvl < LOG_EMERG)
 				loglvl = LOG_EMERG;
+			break;
+		case 'T':
+			eloop_timeout = atoi(optarg);
+			if (eloop_timeout < ELOOP_DEFAULT_TIMEOUT) {
+				fprintf(stderr, "error: eloop timeout too small (%d minimum)\n",
+						ELOOP_DEFAULT_TIMEOUT);
+				usage();
+				exit(1);
+			}
 			break;
 		case 'h':
 		default:
@@ -352,10 +370,18 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	/* initialize lldpad configuration file */
-	if (!init_cfg()) {
+	/*
+	 * Initialize lldpad configuration file.
+	 *
+	 * Note that the confiruation file can become corrupt if we
+	 * have so many devices that the eloop times out, so return
+	 * a unique value here, so that a wrapper can handle the
+	 * problem.
+	 */
+	res = init_cfg();
+	if (res != INIT_CFG_SUCCESS) {
 		LLDPAD_ERR("failed to initialize configuration file\n");
-		exit(1);
+		exit(res);
 	}
 
 	if (eloop_init(clifd)) {

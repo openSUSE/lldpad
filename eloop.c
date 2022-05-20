@@ -28,6 +28,11 @@
 typedef long os_time_t;
 
 /**
+ * eloop_timeout -- timeout for eloop, in seconds
+ */
+int eloop_timeout = ELOOP_DEFAULT_TIMEOUT;
+
+/**
  * os_sleep - Sleep (sec, usec)
  * @sec: Number of seconds to sleep
  * @usec: Number of microseconds to sleep
@@ -369,12 +374,11 @@ int eloop_cancel_timeout(eloop_timeout_handler handler,
 
 static void eloop_handle_alarm(int sig)
 {
-	fprintf(stderr, "eloop: could not process SIGINT or SIGTERM in two "
-		"seconds. Looks like there\n"
-		"is a bug that ends up in a busy loop that "
-		"prevents clean shutdown.\n"
+	fprintf(stderr,
+		"eloop: could not process SIGINT or SIGTERM in %d seconds. Looks like there\n"
+		"is a bug that ends up in a busy loop that prevents clean shutdown.\n"
 		"Killing program forcefully.\n"
-		"sig is %d.\n", sig);
+		"sig is %d.\n", eloop_timeout, sig);
 	exit(1);
 }
 
@@ -388,7 +392,7 @@ static void eloop_handle_signal(int sig)
 		 * would not allow the program to be killed. */
 		eloop.pending_terminate = 1;
 		signal(SIGALRM, eloop_handle_alarm);
-		alarm(2);
+		alarm(eloop_timeout);
 	}
 
 	eloop.signaled++;

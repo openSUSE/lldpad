@@ -19,7 +19,7 @@ ACLOCAL_AMFLAGS = -I m4
 parse_cli.o: CFLAGS+=-U_FORTIFY_SOURCE -Wno-error
 
 ## system requires a shared libconfig
-AM_CFLAGS = -Wall -Werror -Wextra -Wformat=2 $(LIBCONFIG_CFLAGS) $(LIBNL_CFLAGS)
+AM_CFLAGS = $(LIBCONFIG_CFLAGS) $(LIBNL_CFLAGS)
 AM_LDFLAGS = $(LIBCONFIG_LIBS) $(LIBNL_LIBS) -lrt
 
 ## header files to be installed, for programs using the client interface to lldpad 
@@ -149,3 +149,14 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --enable-debug
 lldp_clif_test_SOURCES = test/lldp_clif_test.c lldp_basman_clif.c lldp_util.c \
 	lldp_rtnl.c
 lldp_clif_test_LDFLAGS = -lrt $(LIBNL_LIBS)
+
+RPMBUILD_TOP = $(abs_top_builddir)/rpm/rpmbuild
+RPMBUILD_OPT ?= --without check
+
+# Build user-space RPMs
+rpm: dist $(srcdir)/lldpad.spec
+	${MKDIR_P} ${RPMBUILD_TOP}/SOURCES
+	cp ${DIST_ARCHIVES} ${RPMBUILD_TOP}/SOURCES
+	rpmbuild ${RPMBUILD_OPT} \
+                 -D "_topdir ${RPMBUILD_TOP}" \
+                 -ba $(srcdir)/lldpad.spec

@@ -299,7 +299,7 @@ static bool ecp_build_ECPDU(struct vdp_data *vd)
 
 		rc = ecp_append(vd->ecp.tx.frame, &fb_offset, ptlv->tlv,
 				ptlv->size);
-		ptlv = free_pkd_tlv(ptlv);
+		free_pkd_tlv(ptlv);
 		if (rc)
 			p->seqnr = vd->ecp.lastSequence;
 		else
@@ -682,7 +682,7 @@ static void ecp_rx_ReceiveFrame(void *ctx, UNUSED int ifindex, const u8 *buf,
 	}
 
 	if (hdr->h_proto != example_hdr.h_proto) {
-		LLDPAD_ERR("%s:%s ERROR ethertype %#x not ECP ethertype",
+		LLDPAD_ERR("%s:%s ERROR ethertype %#x not ECP ethertype\n",
 			    __func__, vd->ecp.ifname, htons(hdr->h_proto));
 		frame_error++;
 		return;
@@ -795,7 +795,7 @@ int ecp_init(char *ifname)
 			   __func__, ifname);
 		return -1;
 	}
-	strncpy(vd->ecp.ifname, ifname, sizeof vd->ecp.ifname);
+	STRNCPY_TERMINATED(vd->ecp.ifname, ifname, sizeof vd->ecp.ifname);
 	ecp_rx_change_state(vd, ECP_RX_IDLE);
 	ecp_rx_run_sm(vd);
 	ecp_somethingChangedLocal(vd, true);
@@ -969,7 +969,7 @@ static void ecp_rx_ProcessFrame(struct vdp_data *vd)
 		if ((tlv->type != TYPE_0) && !tlv_stored) {
 			LLDPAD_DBG("%s:%s TLV (%u) was not stored (%p)\n",
 				   __func__, vd->ecp.ifname, tlv->type, tlv);
-			tlv = free_unpkd_tlv(tlv);
+			free_unpkd_tlv(tlv);
 			vd->ecp.stats.statsTLVsUnrecognizedTotal++;
 		}
 		tlv = NULL;

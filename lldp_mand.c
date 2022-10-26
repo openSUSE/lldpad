@@ -42,8 +42,6 @@
 #include "lldp/l2_packet.h"
 #include "lldp_tlv.h"
 
-extern struct lldp_head lldp_head;
-
 static const struct lldp_mod_ops mand_ops = {
 	.lldp_mod_register 	= mand_register,
 	.lldp_mod_unregister 	= mand_unregister,
@@ -59,7 +57,7 @@ struct mand_data *mand_data(const char *ifname, enum agent_type type)
 	struct mand_user_data *mud;
 	struct mand_data *md = NULL;
 
-	mud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_MAND);
+	mud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_MAND);
 	if (mud) {
 		LIST_FOREACH(md, &mud->head, entry) {
 			if (!strncmp(ifname, md->ifname, IFNAMSIZ) &&
@@ -111,16 +109,14 @@ static int mand_bld_ip_chassis(struct mand_data *md,
 			       struct tlv_info_chassis *chassis)
 {
 	unsigned int len;
-	struct in_addr addr_v4;
-	struct in6_addr addr_v6;
 
-	if (!get_ipaddr(md->ifname, &addr_v4)) {
-		chassis->id.na.ip.v4 = addr_v4;
+	void *v4_ptr = &chassis->id.na.ip.v4;
+	void *v6_ptr = &chassis->id.na.ip.v6;
+	if (!get_ipaddr(md->ifname, v4_ptr)) {
 		chassis->sub = CHASSIS_ID_NETWORK_ADDRESS;
 		chassis->id.na.type = MANADDR_IPV4;
 		len = sizeof(chassis->id.na.ip.v4);
-	} else  if (!get_ipaddr6(md->ifname, &addr_v6)) {
-		chassis->id.na.ip.v6 = addr_v6;
+	} else  if (!get_ipaddr6(md->ifname, v6_ptr)) {
 		chassis->sub = CHASSIS_ID_NETWORK_ADDRESS;
 		chassis->id.na.type = MANADDR_IPV6;
 		len = sizeof(chassis->id.na.ip.v6);
@@ -377,10 +373,10 @@ static int mand_bld_portid_tlv(struct mand_data *md, struct lldp_agent *agent)
 			break;
 		}
 		/* FALLTHROUGH */
-	case PORT_ID_NETWORK_ADDRESS:
+	case PORT_ID_NETWORK_ADDRESS: {
 		/* uses ipv4 first */
-		if (!get_ipaddr(md->ifname, &addr_v4)) {
-			portid.id.na.ip.v4 = addr_v4;
+		void *v4_ptr = &portid.id.na.ip.v4;
+		if (!get_ipaddr(md->ifname, v4_ptr)) {
 			portid.sub = PORT_ID_NETWORK_ADDRESS;
 			portid.id.na.type = MANADDR_IPV4;
 			length = sizeof(portid.id.na.type) +
@@ -389,8 +385,8 @@ static int mand_bld_portid_tlv(struct mand_data *md, struct lldp_agent *agent)
 			break;
 		}
 		/* ipv4 fails, get ipv6 */
-		if (!get_ipaddr6(md->ifname, &addr_v6)) {
-			portid.id.na.ip.v6 = addr_v6;
+		void *v6_ptr = &portid.id.na.ip.v6;
+		if (!get_ipaddr6(md->ifname, v6_ptr)) {
 			portid.sub = PORT_ID_NETWORK_ADDRESS;
 			portid.id.na.type = MANADDR_IPV6;
 			length = sizeof(portid.id.na.type) +
@@ -398,6 +394,7 @@ static int mand_bld_portid_tlv(struct mand_data *md, struct lldp_agent *agent)
 				 sizeof(portid.sub);
 			break;
 		}
+  }
 		/* FALLTHROUGH */
 	case PORT_ID_INTERFACE_NAME:
 		portid.sub = PORT_ID_INTERFACE_NAME;
@@ -520,9 +517,11 @@ struct packed_tlv *mand_gettlv(struct port *port, struct lldp_agent *agent)
 	}
 
 	err = mand_bld_tlv(md, agent);
-	if (err)
+	if (err) {
 		LLDPAD_DBG("%s:%s: building mandotory TLV error.\n",
 			   __func__, port->ifname);
+		goto out_err;
+	}
 
 	size = TLVSIZE(md->chassis)
 		+ TLVSIZE(md->portid)
@@ -544,7 +543,7 @@ struct packed_tlv *mand_gettlv(struct port *port, struct lldp_agent *agent)
 	PACK_TLV_AFTER(md->ttl, ptlv, size, out_free);
 	return ptlv;
 out_free:
-	ptlv = free_pkd_tlv(ptlv);
+	free_pkd_tlv(ptlv);
 out_err:
 	LLDPAD_DBG("%s:%s: failed\n", __func__, port->ifname);
 	return NULL;
@@ -608,10 +607,10 @@ void mand_ifup(char *ifname, struct lldp_agent *agent)
 			return;
 		}
 		memset(md, 0, sizeof(struct mand_data));
-		strncpy(md->ifname, ifname, IFNAMSIZ);
+		STRNCPY_TERMINATED(md->ifname, ifname, IFNAMSIZ);
 		md->agenttype = agent->type;
 
-		mud = find_module_user_data_by_id(&lldp_head, LLDP_MOD_MAND);
+		mud = find_module_user_data_by_id(&lldp_mod_head, LLDP_MOD_MAND);
 		LIST_INSERT_HEAD(&mud->head, md, entry);
 	}
 
@@ -639,7 +638,7 @@ struct lldp_module *mand_register(void)
 		LLDPAD_ERR("failed to malloc LLDP Mandatory module data\n");
 		goto out_err;
 	}
-	mud = malloc(sizeof(struct mand_user_data));
+    mud = malloc(sizeof(struct mand_user_data));
 	if (!mud) {
 		free(mod);
 		LLDPAD_ERR("failed to malloc LLDP Mandatory module user data\n");
@@ -647,8 +646,8 @@ struct lldp_module *mand_register(void)
 	}
 	LIST_INIT(&mud->head);
  	mod->id = LLDP_MOD_MAND;
+    mod->data = mud;
 	mod->ops = &mand_ops;
-	mod->data = mud;
 	LLDPAD_INFO("%s:done\n", __func__);
 	return mod;
 out_err:

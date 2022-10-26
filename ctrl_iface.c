@@ -53,8 +53,6 @@
 #include "lldp_util.h"
 #include "messages.h"
 
-extern struct lldp_head lldp_head;
-
 struct ctrl_dst {
 	struct ctrl_dst *next;
 	struct sockaddr_un addr;
@@ -116,7 +114,7 @@ int clif_iface_module(struct clif_data *clifd,
 		return cmd_invalid;
 	}
 
-	mod = find_module_by_id(&lldp_head, module_id);
+	mod = find_module_by_id(&lldp_mod_head, module_id);
 	if (mod && mod->ops && mod->ops->client_cmd)
 		return  (mod->ops->client_cmd)(clifd, from, fromlen,
 			 cmd_start, cmd_len, rbuf+strlen(rbuf), rlen);
@@ -182,6 +180,8 @@ int clif_iface_attach(struct clif_data *clifd,
 	} else {
 		tlv = strdup(ibuf);
 		str = tlv;
+		if (!str)
+			goto err_tlv;
 		str++;
 		/* Count number of TLV Modules */
 		tokenize = strtok(str, delim);

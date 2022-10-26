@@ -71,7 +71,7 @@ bool mibConstrInfoLLDPDU(struct port *port, struct lldp_agent *agent)
 	fb_offset += sizeof(struct l2_ethhdr);
 
 	/* Generic TLV Pack */
-	LIST_FOREACH(np, &lldp_head, lldp) {
+	LIST_FOREACH(np, &lldp_mod_head, lldp) {
 		if (!np->ops || !np->ops->lldp_mod_gettlv)
 			continue;
 
@@ -83,7 +83,7 @@ bool mibConstrInfoLLDPDU(struct port *port, struct lldp_agent *agent)
 			       ptlv->tlv, ptlv->size);
 			datasize += ptlv->size;
 			fb_offset += ptlv->size;
-			ptlv =  free_pkd_tlv(ptlv);
+			free_pkd_tlv(ptlv);
 		}
 	}
 
@@ -94,7 +94,7 @@ bool mibConstrInfoLLDPDU(struct port *port, struct lldp_agent *agent)
 	memcpy(agent->tx.frameout + fb_offset, ptlv->tlv, ptlv->size);
 	datasize += ptlv->size;
 	fb_offset += ptlv->size;
-	ptlv =  free_pkd_tlv(ptlv);
+	free_pkd_tlv(ptlv);
 
 	if (datasize < ETH_MIN_DATA_LEN)
 		agent->tx.sizeout = ETH_ZLEN;
@@ -104,7 +104,7 @@ bool mibConstrInfoLLDPDU(struct port *port, struct lldp_agent *agent)
 	return true;
 
 error:
-	ptlv = free_pkd_tlv(ptlv);
+	free_pkd_tlv(ptlv);
 	if (agent->tx.frameout)
 		free(agent->tx.frameout);
 	agent->tx.frameout = NULL;
@@ -206,7 +206,7 @@ bool mibConstrShutdownLLDPDU(struct port *port, struct lldp_agent *agent)
 	memcpy(agent->tx.frameout, (void *)&eth, sizeof(struct l2_ethhdr));
 	fb_offset += sizeof(struct l2_ethhdr);
 
-	np = find_module_by_id(&lldp_head, LLDP_MOD_MAND);
+	np = find_module_by_id(&lldp_mod_head, LLDP_MOD_MAND);
 	if (!np)
 		goto error;
 	if (!np->ops || !np->ops->lldp_mod_gettlv)
@@ -220,7 +220,7 @@ bool mibConstrShutdownLLDPDU(struct port *port, struct lldp_agent *agent)
 		memcpy(agent->tx.frameout + fb_offset, ptlv->tlv, ptlv->size);
 		datasize += ptlv->size;
 		fb_offset += ptlv->size;
-		ptlv =  free_pkd_tlv(ptlv);
+		free_pkd_tlv(ptlv);
 	}
 
 	/* The End TLV marks the end of the LLDP PDU */
@@ -230,7 +230,7 @@ bool mibConstrShutdownLLDPDU(struct port *port, struct lldp_agent *agent)
 	memcpy(agent->tx.frameout + fb_offset, ptlv->tlv, ptlv->size);
 	datasize += ptlv->size;
 	fb_offset += ptlv->size;
-	ptlv = free_pkd_tlv(ptlv);
+	free_pkd_tlv(ptlv);
 
 	if (datasize < ETH_MIN_DATA_LEN)
 		agent->tx.sizeout = ETH_ZLEN;
@@ -239,7 +239,7 @@ bool mibConstrShutdownLLDPDU(struct port *port, struct lldp_agent *agent)
 	return true;
 
 error:
-	ptlv = free_pkd_tlv(ptlv);
+	free_pkd_tlv(ptlv);
 	if (agent->tx.frameout)
 		free(agent->tx.frameout);
 	agent->tx.frameout = NULL;
@@ -270,7 +270,7 @@ void run_tx_sm(struct port *port, struct lldp_agent *agent)
 			process_tx_idle(agent);
 			break;
 		case TX_SHUTDOWN_FRAME:
-			process_tx_shutdown_frame(port, agent);
+			process_tx_shutdown_frame(port, agent, true);
 			break;
 		case TX_INFO_FRAME:
 			process_tx_info_frame(port, agent);
@@ -330,8 +330,19 @@ void process_tx_idle(UNUSED struct lldp_agent *agent)
 	return;
 }
 
-void process_tx_shutdown_frame(struct port *port, struct lldp_agent *agent)
+/* we ignore 'adminStatus' in the case that we have recently transitioned
+ * to the shutdown state (in the case of the 'tx' state change) to allow
+ * for transmitting the ttl==0 as required by the IEEE standard. */
+void process_tx_shutdown_frame(struct port *port, struct lldp_agent *agent,
+				bool ignoreStatus)
 {
+	if (agent->adminStatus != enabledRxTx &&
+	    agent->adminStatus != enabledTxOnly) {
+		if (!ignoreStatus) {
+			return;
+		}
+	}
+
 	if (agent->timers.txShutdownWhile == 0) {
 		if (mibConstrShutdownLLDPDU(port, agent))
 			txFrame(port, agent);

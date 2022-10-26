@@ -163,7 +163,7 @@ static void timer(UNUSED void *eloop_data, UNUSED void *user_ctx)
 			run_rx_sm(port, agent);
 			update_rx_timers(agent);
 
-			LIST_FOREACH(n, &lldp_head, lldp) {
+			LIST_FOREACH(n, &lldp_mod_head, lldp) {
 				if (n->ops && n->ops->timer)
 					n->ops->timer(port, agent);
 			}
@@ -200,7 +200,7 @@ void clean_lldp_agents(void)
 			LLDPAD_DBG("Send shutdown frame on port %s\n",
 				port->ifname);
 			LIST_FOREACH(agent, &port->agent_head, entry) {
-				process_tx_shutdown_frame(port, agent);
+				process_tx_shutdown_frame(port, agent, false);
 			}
 		} else {
 			LLDPAD_DBG("No shutdown frame is sent on port %s\n",

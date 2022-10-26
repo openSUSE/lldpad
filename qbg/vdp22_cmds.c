@@ -57,7 +57,7 @@ static struct lldp_module *get_my_module(int thisid)
 {
 	struct lldp_module *np = NULL;
 
-	LIST_FOREACH(np, &lldp_head, lldp)
+	LIST_FOREACH(np, &lldp_mod_head, lldp)
 		if (thisid == np->id)
 			break;
 	return np;
@@ -296,7 +296,7 @@ int vdp22_sendevent(struct vdpnl_vsi *p)
 	return 0;
 }
 
-static int vdp22_cmdok(struct cmd *cmd, cmd_status expected)
+static int vdp22_cmdok(struct cmd *cmd, int expected)
 {
 	if (cmd->cmd != expected)
 		return cmd_invalid;
@@ -577,7 +577,7 @@ static int get_arg_vsi(struct cmd *cmd, char *arg, char *argvalue,
 	memset(&vsi, 0, sizeof(vsi));
 	memset(vsi_str, 0, sizeof(vsi_str));
 	vsi.request = cmd->tlvid;
-	strncpy(vsi.ifname, cmd->ifname, sizeof(vsi.ifname) - 1);
+	STRNCPY_TERMINATED(vsi.ifname, cmd->ifname, sizeof(vsi.ifname));
 	good_cmd = cmd_failed;
 	if ((cmd->ops & op_config) && (cmd->ops & op_arg)) {
 		memset(&mac, 0, sizeof(mac));

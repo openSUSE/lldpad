@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <sys/types.h>
 #include "clif.h"
 #include "dcbtool.h"
 #include "lldp_dcbx_cmds.h"
@@ -372,6 +373,8 @@ int handle_dcb_cmds(struct clif *clif, int argc, char *argv[], int raw)
 	}
 
 	cmd_args = get_cmd_args();
+	if (!cmd_args)
+		return -1;
 
 	if (get_feature() == FEATURE_DCBX)
 		snprintf(cbuf, sizeof(cbuf), "%c%01x%02x%02x%s",

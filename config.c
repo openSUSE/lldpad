@@ -56,21 +56,6 @@
 config_t lldpad_cfg;
 
 /*
- * config_ifkey - Generates a config key
- *
- * Given an interface name this functions generates
- * a key (based on interface's index) suitable
- * to pass to libconfig.
- *
- */
-void config_ifkey(const char *name, char *ifkey) {
-	int index = if_nametoindex(name);
-	
-	if(index)
-		sprintf(ifkey, "if%d", index);
-}
-
-/*
  * init_cfg - initialze the global lldpad_cfg via config_init
  *
  * Returns true (1) for succes and false (0) for failed
@@ -185,7 +170,7 @@ void scan_port(UNUSED void *eloop_data, UNUSED void *user_ctx)
 		LIST_FOREACH(agent, &port->agent_head, entry) {
 			LLDPAD_DBG("%s: calling ifdown for agent %p.\n",
 				   __func__, agent);
-			LIST_FOREACH(np, &lldp_head, lldp) {
+			LIST_FOREACH(np, &lldp_mod_head, lldp) {
 				ops = np->ops;
 				if (ops->lldp_mod_ifdown)
 					ops->lldp_mod_ifdown(ifname, agent);
@@ -234,7 +219,7 @@ int check_cfg_file(void)
 			}
 		} else {
 			retval = errno;
-			LLDPAD_ERR("%s is not readable and writeable",
+			LLDPAD_ERR("%s is not readable and writeable\n",
 				cfg_file_name);
 		}
 	}
@@ -310,7 +295,7 @@ int get_int_config(config_setting_t *s, char *attr, int int_type,
 	}
 
 	if (!rval)
-		LLDPAD_ERR("invalid value for %s", attr);
+		LLDPAD_ERR("invalid value for %s\n", attr);
 
 	return rval;
 }
@@ -354,7 +339,7 @@ int get_array_config(config_setting_t *s, char *attr, int int_type,
 	}
 
 	if (!rval)
-		LLDPAD_ERR("invalid setting for %s", attr);
+		LLDPAD_ERR("invalid setting for %s\n", attr);
 
 	return rval;
 }
@@ -394,7 +379,7 @@ void init_ports(void)
 		LIST_FOREACH(agent, &port->agent_head, entry) {
 			LLDPAD_DBG("%s: calling ifup for agent %p.\n",
 				   __func__, agent);
-			LIST_FOREACH(np, &lldp_head, lldp) {
+			LIST_FOREACH(np, &lldp_mod_head, lldp) {
 				if (np->ops->lldp_mod_ifup)
 					np->ops->lldp_mod_ifup(p->if_name, agent);
 			}
@@ -466,15 +451,14 @@ static int lookup_config_value(char *path, union cfg_get v, int type)
 int get_config_setting(const char *ifname, int agenttype, char *path,
 		       union cfg_get v, int type)
 {
-	char p[1024], ifkey[IFNAMSIZ];
+	char p[1024];
 	int rval = CONFIG_FALSE;
 	const char *section = agent_type2section(agenttype);
 
 	/* look for setting in section->ifname area first */
 	if (ifname) {
-		config_ifkey(ifname, ifkey);
 		snprintf(p, sizeof(p), "%s.%s.%s",
-			 section, ifkey, path);
+			 section, ifname, path);
 		rval = lookup_config_value(p, v, type);
 	}
 
@@ -491,16 +475,15 @@ int get_config_setting(const char *ifname, int agenttype, char *path,
 int remove_config_setting(const char *ifname, int agenttype, char *parent,
 			  char *name)
 {
-	char p[1024], ifkey[IFNAMSIZ];
+	char p[1024];
 	int rval = CONFIG_FALSE;
 	config_setting_t *setting = NULL;
 	const char *section = agent_type2section(agenttype);
 
 	/* look for setting in section->ifname area first */
-	if (ifname) { 
-		config_ifkey(ifname, ifkey);
+	if (ifname) {
 		snprintf(p, sizeof(p), "%s.%s.%s",
-			 section, ifkey, parent);
+			 section, ifname, parent);
 		setting = config_lookup(&lldpad_cfg, p);
 	}
 
@@ -587,17 +570,15 @@ int set_config_setting(const char *ifname, int agenttype, char *path,
 		       union cfg_set v, int type)
 {
 	config_setting_t *setting = NULL;
-	char p[1024], ifkey[IFNAMSIZ];
+	char p[1024];
 	int rval = cmd_success;
 	const char *section = agent_type2section(agenttype);
 
 	LLDPAD_DBG("%s(%i): \n", __func__, __LINE__);
 
-	if (strlen(ifname)){
-		config_ifkey(ifname, ifkey);
+	if (strlen(ifname))
 		snprintf(p, sizeof(p), "%s.%s.%s",
-			 section, ifkey, path);
-	}
+			 section, ifname, path);
 	else
 		snprintf(p, sizeof(p), "%s.%s.%s",
 			 section, LLDP_COMMON, path);

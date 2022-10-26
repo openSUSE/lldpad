@@ -311,8 +311,6 @@ static int mand_bld_portid_tlv(struct mand_data *md, struct lldp_agent *agent)
 	char arg_path[512] = { 0 };
 	struct unpacked_tlv *tlv;
 	struct tlv_info_portid portid;
-	struct in_addr addr_v4;
-	struct in6_addr addr_v6;
 
 
 	/* build only once */

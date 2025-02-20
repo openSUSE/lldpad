@@ -672,8 +672,9 @@ static struct nla_policy ifla_info_policy[IFLA_INFO_MAX + 1] =
 
 int is_macvtap(const char *ifname)
 {
-	int ret, s;
+	int ret, s, realsize;
 	struct nlmsghdr *nlh;
+	void *temp;
 	struct ifinfomsg *ifinfo;
 	struct nlattr *tb[IFLA_MAX+1],
 		      *tb2[IFLA_INFO_MAX+1];
@@ -684,13 +685,11 @@ int is_macvtap(const char *ifname)
 		return false;
 	}
 
-	nlh = malloc(NLMSG_SIZE);
+	nlh = calloc(1, NLMSG_SIZE);
 
 	if (!nlh) {
 		goto out;
 	}
-
-	memset(nlh, 0, NLMSG_SIZE);
 
 	nlh->nlmsg_len = NLMSG_LENGTH(sizeof(struct ifinfomsg));
         nlh->nlmsg_type = RTM_GETLINK;
@@ -706,10 +705,23 @@ int is_macvtap(const char *ifname)
 		goto out_free;
 	}
 
-	memset(nlh, 0, NLMSG_SIZE);
+	do {
+		realsize = recv(s, NULL, 0, MSG_DONTWAIT | MSG_PEEK | MSG_TRUNC);
+	} while ((realsize < 0) && errno == EINTR);
+
+	if (realsize < 0) {
+		goto out_free;
+	}
+
+	temp = realloc(nlh, realsize);
+	if (!temp) {
+		goto out_free;
+	}
+	memset(temp, 0, realsize);
+	nlh = temp;
 
 	do {
-		ret = recv(s, (void *) nlh, NLMSG_SIZE, MSG_DONTWAIT);
+		ret = recv(s, (void *) nlh, realsize, MSG_DONTWAIT);
 	} while ((ret < 0) && errno == EINTR);
 
 	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg),

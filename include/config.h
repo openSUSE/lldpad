@@ -20,7 +20,7 @@
   the file called "COPYING".
 
   Contact Information:
-  open-lldp Mailing List <lldp-devel@open-lldp.org>
+  Issue Tracker: https://github.com/intel/openlldp/issues
 
 *******************************************************************************/
 
@@ -79,6 +79,7 @@ int get_cfg(const char *ifname, int agenttype, char *path, union cfg_get value, 
 int set_cfg(const char *ifname, int agenttype, char *path, union cfg_set value, int type);
 int get_config_setting(const char *ifname, int agenttype, char *path, union cfg_get value, int type);
 int set_config_setting(const char *ifname, int agenttype, char *path, union cfg_set value, int type);
+int remove_config_device(const char *ifname, int agenttype);
 int remove_config_setting(const char *ifname, int agenttype, char *parent, char *name);
 int get_config_tlvfield(const char *ifname, int agenttype, u32 tlvid, const char *field, union cfg_get value, int type);
 int get_config_tlvfield_int(const char *ifname, int agenttype, u32 tlvid, const char *field, int *value);

@@ -20,7 +20,7 @@
   the file called "COPYING".
 
   Contact Information:
-  open-lldp Mailing List <lldp-devel@open-lldp.org>
+  Issue Tracker: https://github.com/intel/openlldp/issues
 
 *******************************************************************************/
 
@@ -52,11 +52,29 @@ typedef __u64 u64;
 	 })
 
 /* Use strncpy with N-1 and ensure the string is terminated.  */
+#ifdef HAVE_STRLCPY
+#define STRNCPY_TERMINATED(DEST, SRC, N) \
+  (void)strlcpy(DEST, SRC, N)
+#elif __GNUC__ >= 10
 #define STRNCPY_TERMINATED(DEST, SRC, N) \
   do { \
-    strncpy (DEST, SRC, N - 1); \
-    DEST[N - 1] = '\0'; \
+    if((N) > 0) { \
+      _Pragma("GCC diagnostic push") \
+      _Pragma("GCC diagnostic ignored \"-Wstringop-truncation\"") \
+      strncpy (DEST, SRC, (N) - 1); \
+      _Pragma("GCC diagnostic pop") \
+      DEST[(N) - 1] = '\0'; \
+    } \
   } while (false)
+#else
+#define STRNCPY_TERMINATED(DEST, SRC, N) \
+  do { \
+    if((N) > 0) { \
+      strncpy (DEST, SRC, (N) - 1); \
+      DEST[(N) - 1] = '\0'; \
+    } \
+  } while (false)
+#endif
 
 /*
  * Organizationally Unique Identifier (OUI)

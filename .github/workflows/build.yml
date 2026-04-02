@@ -1,0 +1,69 @@
+name: Build CI
+permissions: read-all
+
+on:
+  push:
+    branches: ["*"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - version: 7
+            os: ubuntu-20.04
+          - version: 8
+            os: ubuntu-20.04
+          - version: 9
+            os: ubuntu-20.04
+          - version: 10
+            os: ubuntu-20.04
+          - version: 11
+            os: ubuntu-20.04
+          - version: 12
+            os: ubuntu-22.04
+          - version: 13
+            os: ubuntu-22.04
+          - version: 14
+            os: ubuntu-24.04
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: >
+          sudo apt-get install -y
+          libconfig-dev libnl-3-dev libnl-genl-3-dev
+          linux-libc-dev rpm libreadline-dev
+
+      - name: Set up GCC
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: ${{ matrix.version }}
+          platform: x64
+
+      - name: Run bootstrap
+        run: ./bootstrap.sh
+
+      - name: Build RPM
+        run: ./contrib/build-rpm.sh
+
+      - name: Configure project
+        run: ./configure --enable-warnings --enable-errors
+
+      - name: Build
+        run: make
+
+      - name: Run check
+        run: make check
+
+      - name: Install
+        run: sudo make install
+
+      - name: Run distcheck
+        run: make distcheck

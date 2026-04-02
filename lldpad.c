@@ -25,7 +25,7 @@
   the file called "COPYING".
 
   Contact Information:
-  open-lldp Mailing List <lldp-devel@open-lldp.org>
+  Issue Tracker: https://github.com/intel/openlldp/issues
 
 *******************************************************************************/
 
@@ -167,7 +167,7 @@ static void remove_all_adapters(void)
 
 	for (port = porthead; port; port = next) {
 		next = port->next;
-		remove_port(port->ifname);
+		remove_port(port->ifname, false);
 	}
 
 	return;

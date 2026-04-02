@@ -20,7 +20,7 @@
   the file called "COPYING".
 
   Contact Information:
-  open-lldp Mailing List <lldp-devel@open-lldp.org>
+  Issue Tracker: https://github.com/intel/openlldp/issues
 
 *******************************************************************************/
 
@@ -672,8 +672,9 @@ static struct nla_policy ifla_info_policy[IFLA_INFO_MAX + 1] =
 
 int is_macvtap(const char *ifname)
 {
-	int ret, s;
+	int ret, s, realsize;
 	struct nlmsghdr *nlh;
+	void *temp;
 	struct ifinfomsg *ifinfo;
 	struct nlattr *tb[IFLA_MAX+1],
 		      *tb2[IFLA_INFO_MAX+1];
@@ -684,13 +685,11 @@ int is_macvtap(const char *ifname)
 		return false;
 	}
 
-	nlh = malloc(NLMSG_SIZE);
+	nlh = calloc(1, NLMSG_SIZE);
 
 	if (!nlh) {
 		goto out;
 	}
-
-	memset(nlh, 0, NLMSG_SIZE);
 
 	nlh->nlmsg_len = NLMSG_LENGTH(sizeof(struct ifinfomsg));
         nlh->nlmsg_type = RTM_GETLINK;
@@ -706,10 +705,23 @@ int is_macvtap(const char *ifname)
 		goto out_free;
 	}
 
-	memset(nlh, 0, NLMSG_SIZE);
+	do {
+		realsize = recv(s, NULL, 0, MSG_DONTWAIT | MSG_PEEK | MSG_TRUNC);
+	} while ((realsize < 0) && errno == EINTR);
+
+	if (realsize < 0) {
+		goto out_free;
+	}
+
+	temp = realloc(nlh, realsize);
+	if (!temp) {
+		goto out_free;
+	}
+	memset(temp, 0, realsize);
+	nlh = temp;
 
 	do {
-		ret = recv(s, (void *) nlh, NLMSG_SIZE, MSG_DONTWAIT);
+		ret = recv(s, (void *) nlh, realsize, MSG_DONTWAIT);
 	} while ((ret < 0) && errno == EINTR);
 
 	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg),
@@ -1092,7 +1104,8 @@ int get_ipaddrstr(const char *ifname, char *ipaddr, size_t size)
 	rc = get_saddr(ifname, &sa);
 	if (rc == 0) {
 		memset(ipaddr, 0, size);
-		strncpy(ipaddr, inet_ntoa(sa.sin_addr), size);
+		if (inet_ntop(AF_INET, &sa.sin_addr, ipaddr, size) == NULL)
+			rc = errno;
 	}
 	return rc;
 }
@@ -1279,16 +1292,16 @@ int get_arg_val_list(char *ibuf, int ilen, int *ioff,
 			p = (int *) realloc(arglens,
 				(i/NUM_ARGS + 1) * NUM_ARGS * sizeof(int));
 			if (!p) {
-				free(arglens);
-				return 0;
+				numargs = 0;
+				goto out;
 			} else {
 				arglens = p;
 			}
 			p = (int *) realloc(argvallens,
 				(i/NUM_ARGS + 1) * NUM_ARGS * sizeof(int));
 			if (!p) {
-				free(argvallens);
-				return 0;
+				numargs = 0;
+				goto out;
 			} else {
 				argvallens = p;
 			}
@@ -1311,14 +1324,12 @@ int get_arg_val_list(char *ibuf, int ilen, int *ioff,
 					*(argvallens+i) = argvalue_len;
 				}
 			} else {
-				free(arglens);
-				free(argvallens);
-				return 0;
+				numargs = 0;
+				goto out;
 			}
 		} else {
-			free(arglens);
-			free(argvallens);
-			return 0;
+			numargs = 0;
+			goto out;
 		}
 	}
 	numargs = i;
@@ -1326,6 +1337,8 @@ int get_arg_val_list(char *ibuf, int ilen, int *ioff,
 		args[i][*(arglens+i)] = '\0';
 		argvals[i][*(argvallens+i)] = '\0';
 	}
+
+out:
 	free(arglens);
 	free(argvallens);
 	return numargs;

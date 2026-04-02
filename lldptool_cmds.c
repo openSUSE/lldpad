@@ -20,7 +20,7 @@
   the file called "COPYING".
 
   Contact Information:
-  open-lldp Mailing List <lldp-devel@open-lldp.org>
+  Issue Tracker: https://github.com/intel/openlldp/issues
 
 *******************************************************************************/
 
@@ -540,7 +540,7 @@ void print_cmd_response(char *ibuf, int status)
 	if (len < sizeof(cmd.ifname)) {
 		memcpy(cmd.ifname, ibuf+CMD_IF, len);
 	} else {
-		printf("Response ifname too long: %*s\n", (int)len, cmd.ifname);
+		printf("Response ifname too long: %*s\n", (int)len, ibuf + CMD_IF);
 		return;
 	}
 	cmd.ifname[len] = '\0';

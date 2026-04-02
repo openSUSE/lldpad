@@ -20,7 +20,7 @@
   the file called "COPYING".
 
   Contact Information:
-  open-lldp Mailing List <lldp-devel@open-lldp.org>
+  Issue Tracker: https://github.com/intel/openlldp/issues
 
 *******************************************************************************/
 
@@ -97,7 +97,7 @@ extern struct port *porthead;
 extern "C" {
 #endif
 struct port *add_port(int ifindex, const char *);
-int remove_port(const char *);
+int remove_port(const char *, bool remove_config);
 #ifdef __cplusplus
 }
 #endif

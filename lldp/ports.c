@@ -20,7 +20,7 @@
   the file called "COPYING".
 
   Contact Information:
-  open-lldp Mailing List <lldp-devel@open-lldp.org>
+  Issue Tracker: https://github.com/intel/openlldp/issues
 
 *******************************************************************************/
 
@@ -297,7 +297,7 @@ fail:
 	return NULL;
 }
 
-int remove_port(const char *ifname)
+int remove_port(const char *ifname, bool remove_config)
 {
 	int ifindex = get_ifidx(ifname);
 	struct port *port;    /* Pointer to port to remove */
@@ -355,6 +355,10 @@ int remove_port(const char *ifname)
 			free(agent->tx.frameout);
 
 		LIST_REMOVE(agent, entry);
+
+		if (remove_config)
+			remove_config_device(ifname, agent->type);
+
 		free(agent);
 	}
 

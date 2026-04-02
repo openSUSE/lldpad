@@ -20,7 +20,7 @@
   the file called "COPYING".
 
   Contact Information:
-  open-lldp Mailing List <lldp-devel@open-lldp.org>
+  Issue Tracker: https://github.com/intel/openlldp/issues
 
 *******************************************************************************/
 
@@ -135,7 +135,7 @@ void scan_port(UNUSED void *eloop_data, UNUSED void *user_ctx)
 		}
 		next = port->next;
 		if (!found)
-			remove_port(port->ifname);
+			remove_port(port->ifname, true);
 	}
 
 	/* Walk port list looking for devices that should have been added
@@ -470,6 +470,32 @@ int get_config_setting(const char *ifname, int agenttype, char *path,
 	}
 
 	return (rval == CONFIG_FALSE) ? cmd_failed : cmd_success;
+}
+
+int remove_config_device(const char *ifname, int agenttype)
+{
+	const char *section = agent_type2section(agenttype);
+	config_setting_t *setting = NULL;
+	int rval = cmd_failed;
+
+	setting = config_lookup(&lldpad_cfg, section);
+
+	if (setting != NULL) {
+		rval = config_setting_remove(setting, ifname);
+		if (rval == CONFIG_TRUE) {
+			LLDPAD_DBG("In %s, remove %s from section %s\n", __func__, ifname, section);
+			if (config_write_file(&lldpad_cfg, cfg_file_name)) {
+				rval = cmd_success;
+			} else {
+				LLDPAD_DBG("In %s, update config failed\n", __func__);
+				rval = cmd_failed;
+			}
+		}
+	} else {
+		LLDPAD_DBG("In %s, can't find section %s\n", __func__, section);
+	}
+
+	return rval;
 }
 
 int remove_config_setting(const char *ifname, int agenttype, char *parent,
